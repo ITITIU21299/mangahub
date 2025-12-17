@@ -27,6 +27,7 @@ func migrate(db *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS users (
 			id TEXT PRIMARY KEY,
 			username TEXT UNIQUE,
+			email TEXT UNIQUE,
 			password_hash TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);`,

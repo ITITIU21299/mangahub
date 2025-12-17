@@ -1,4 +1,64 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+
 export default function SignInPage() {
+  const router = useRouter();
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!identifier || !password) {
+      setError("Please enter your email/username and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const body: Record<string, string> = { password };
+      // Simple heuristic: looks like an email → email, otherwise username.
+      if (identifier.includes("@")) {
+        body.email = identifier;
+      } else {
+        body.username = identifier;
+      }
+
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.error || "Login failed. Please check your credentials.");
+        return;
+      }
+
+      if (data.token) {
+        localStorage.setItem("mangahub_token", data.token);
+      }
+
+      router.push("/discover");
+    } catch {
+      setError("Unable to reach server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full justify-center bg-background-light text-text-main-light dark:bg-background-dark dark:text-text-main-dark">
       <div className="relative flex h-full min-h-screen w-full max-w-md flex-col overflow-hidden border-x border-neutral-100 bg-white shadow-xl dark:border-neutral-800 dark:bg-[#1a1a0b] sm:my-8 sm:min-h-0 sm:h-[850px] sm:rounded-[3rem]">
@@ -31,7 +91,7 @@ export default function SignInPage() {
             </p>
           </div>
 
-          <form className="flex w-full flex-col gap-5">
+          <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit}>
             <div className="group flex flex-col gap-2">
               <label
                 htmlFor="email"
@@ -42,8 +102,10 @@ export default function SignInPage() {
               <div className="relative flex items-center">
                 <input
                   id="email"
-                  type="email"
-                  placeholder="otaku@example.com"
+                  type="text"
+                  placeholder="otaku@example.com or otaku99"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   className="h-14 w-full rounded-full border border-transparent bg-background-light pl-5 pr-4 text-neutral-dark outline-none transition-all placeholder:text-neutral-medium/50 focus:border-primary focus:ring-2 focus:ring-primary/50 dark:bg-background-dark dark:text-white"
                 />
                 <span className="material-symbols-outlined absolute right-5 text-neutral-medium">
@@ -64,6 +126,8 @@ export default function SignInPage() {
                   id="password"
                   type="password"
                   placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="h-14 w-full rounded-full border border-transparent bg-background-light pl-5 pr-12 text-neutral-dark outline-none transition-all placeholder:text-neutral-medium/50 focus:border-primary focus:ring-2 focus:ring-primary/50 dark:bg-background-dark dark:text-white"
                 />
                 <button
@@ -84,11 +148,17 @@ export default function SignInPage() {
             </div>
 
             <div className="mt-4 flex flex-col gap-4">
+              {error && (
+                <p className="rounded-2xl bg-red-100 px-4 py-2 text-sm font-medium text-red-800 dark:bg-red-900/40 dark:text-red-200">
+                  {error}
+                </p>
+              )}
               <button
-                type="button"
-                className="h-14 w-full rounded-full bg-primary text-lg font-bold tracking-wide text-neutral-dark shadow-md transition-all hover:bg-[#e6e205] hover:shadow-lg active:scale-[0.98]"
+                type="submit"
+                disabled={loading}
+                className="h-14 w-full rounded-full bg-primary text-lg font-bold tracking-wide text-neutral-dark shadow-md transition-all hover:bg-[#e6e205] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                LOG IN
+                {loading ? "Logging in..." : "LOG IN"}
               </button>
 
               <div className="relative flex items-center justify-center py-2">

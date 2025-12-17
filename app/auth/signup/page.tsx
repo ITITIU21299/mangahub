@@ -1,4 +1,61 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+
 export default function SignUpPage() {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!username || !email || !password) {
+      setError("Please fill in username, email, and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(
+          data.error ||
+            "Registration failed. Please check your details and try again.",
+        );
+        return;
+      }
+
+      setSuccess("Account created! Redirecting to sign in...");
+      // Small delay so the user sees the message.
+      setTimeout(() => {
+        router.push("/auth/signin");
+      }, 1200);
+    } catch {
+      setError("Unable to reach server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="flex min-h-screen w-full justify-center bg-background-light text-text-main-light dark:bg-background-dark dark:text-text-main-dark">
       <div className="relative flex h-full min-h-screen w-full max-w-md flex-col overflow-x-hidden bg-white shadow-2xl dark:bg-[#1a190b]">
@@ -33,7 +90,7 @@ export default function SignUpPage() {
         </div>
 
         {/* Form */}
-        <form className="flex flex-col gap-4 px-6 pb-4">
+        <form className="flex flex-col gap-4 px-6 pb-4" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1">
             <label
               htmlFor="username"
@@ -46,6 +103,8 @@ export default function SignUpPage() {
                 id="username"
                 type="text"
                 placeholder="OtakuKing99"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="form-input h-14 w-full rounded-full border-2 border-[#e6e6db] bg-background-light pl-5 pr-12 text-base font-medium text-text-main shadow-sm transition-all placeholder:text-text-subtle focus:border-primary focus:ring-0 dark:border-gray-700 dark:bg-background-dark dark:text-white"
               />
               <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-success">
@@ -66,6 +125,8 @@ export default function SignUpPage() {
                 id="email"
                 type="email"
                 placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="form-input h-14 w-full rounded-full border-2 border-[#e6e6db] bg-background-light pl-5 pr-12 text-base font-medium text-text-main shadow-sm transition-all placeholder:text-text-subtle focus:border-primary focus:ring-0 dark:border-gray-700 dark:bg-background-dark dark:text-white"
               />
               <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-text-subtle">
@@ -86,7 +147,8 @@ export default function SignUpPage() {
                 id="password"
                 type="password"
                 placeholder="Min. 8 characters"
-                defaultValue="Secret123"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="form-input h-14 w-full rounded-full border-2 border-[#e6e6db] bg-background-light pl-5 pr-12 text-base font-medium text-text-main shadow-sm transition-all placeholder:text-text-subtle focus:border-primary focus:ring-0 dark:border-gray-700 dark:bg-background-dark dark:text-white"
               />
               <button
@@ -98,11 +160,22 @@ export default function SignUpPage() {
             </div>
           </div>
 
+          {error && (
+            <p className="mt-2 rounded-2xl bg-red-100 px-4 py-2 text-sm font-medium text-red-800 dark:bg-red-900/40 dark:text-red-200">
+              {error}
+            </p>
+          )}
+          {success && (
+            <p className="mt-2 rounded-2xl bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+              {success}
+            </p>
+          )}
           <button
-            type="button"
-            className="group mt-4 flex h-14 w-full items-center justify-center rounded-full bg-primary px-8 text-lg font-bold tracking-tight text-[#181811] shadow-lg shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-primary/40 active:translate-y-0 active:shadow-none"
+            type="submit"
+            disabled={loading}
+            className="group mt-4 flex h-14 w-full items-center justify-center rounded-full bg-primary px-8 text-lg font-bold tracking-tight text-[#181811] shadow-lg shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-primary/40 active:translate-y-0 active:shadow-none disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Register
+            {loading ? "Registering..." : "Register"}
             <span className="material-symbols-outlined ml-2 transition-transform group-hover:translate-x-1">
               arrow_forward
             </span>

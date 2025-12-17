@@ -7,28 +7,17 @@ import (
 	"os"
 	"time"
 
+	"mangahub/internal/auth"
 	"mangahub/internal/database"
 	"mangahub/pkg/models"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type APIServer struct {
 	Router    *gin.Engine
 	Database  *sql.DB
-	JWTSecret []byte
-}
-
-type registerRequest struct {
-	Username string `json:"username" binding:"required,min=3"`
-	Password string `json:"password" binding:"required,min=6"`
-}
-
-type loginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
 }
 
 type libraryRequest struct {
@@ -58,12 +47,23 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
+	// Allow the Next.js dev server (http://localhost:3000) to call this API.
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
+	authSvc := auth.NewService(db)
+	authMiddleware := auth.RegisterRoutes(r, authSvc, jwtSecret)
+
 	s := &APIServer{
 		Router:    r,
 		Database:  db,
-		JWTSecret: jwtSecret,
 	}
-	s.registerRoutes()
+	s.registerRoutes(authMiddleware)
 
 	log.Println("HTTP API listening on :8080")
 	if err := r.Run(":8080"); err != nil {
@@ -71,106 +71,15 @@ func main() {
 	}
 }
 
-func (s *APIServer) registerRoutes() {
-	s.Router.POST("/auth/register", s.handleRegister)
-	s.Router.POST("/auth/login", s.handleLogin)
-
+func (s *APIServer) registerRoutes(authMiddleware gin.HandlerFunc) {
 	auth := s.Router.Group("/")
-	auth.Use(s.jwtMiddleware)
+	auth.Use(authMiddleware)
 
 	auth.GET("/manga", s.handleListManga)
 	auth.GET("/manga/:id", s.handleGetManga)
 	auth.POST("/users/library", s.handleAddToLibrary)
 	auth.GET("/users/library", s.handleGetLibrary)
 	auth.PUT("/users/progress", s.handleUpdateProgress)
-}
-
-func (s *APIServer) handleRegister(c *gin.Context) {
-	var req registerRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
-		return
-	}
-
-	_, err = s.Database.Exec(
-		`INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?)`,
-		"user_"+req.Username, req.Username, string(hash),
-	)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username already exists"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "user created"})
-}
-
-func (s *APIServer) handleLogin(c *gin.Context) {
-	var req loginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var id, hash string
-	if err := s.Database.QueryRow(
-		`SELECT id, password_hash FROM users WHERE username = ?`, req.Username,
-	).Scan(&id, &hash); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
-		return
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": id,
-		"usr": req.Username,
-		"exp": time.Now().Add(24 * time.Hour).Unix(),
-	})
-	signed, err := token.SignedString(s.JWTSecret)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to sign token"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"token": signed})
-}
-
-func (s *APIServer) jwtMiddleware(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
-	if len(authHeader) < 8 || authHeader[:7] != "Bearer " {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-		return
-	}
-
-	raw := authHeader[7:]
-	token, err := jwt.Parse(raw, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, jwt.ErrSignatureInvalid
-		}
-		return s.JWTSecret, nil
-	})
-	if err != nil || !token.Valid {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
-		return
-	}
-	userID, _ := claims["sub"].(string)
-	c.Set("user_id", userID)
-	c.Next()
 }
 
 func (s *APIServer) handleListManga(c *gin.Context) {

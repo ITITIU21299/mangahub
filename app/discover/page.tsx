@@ -130,7 +130,12 @@ export default function DiscoverPage() {
     if (status === "All") {
       setSelectedStatus(null);
     } else {
-      setSelectedStatus(status);
+      // Toggle: if clicking the same status, unselect it; otherwise select the new one
+      if (selectedStatus === status) {
+        setSelectedStatus(null);
+      } else {
+        setSelectedStatus(status);
+      }
     }
   };
 

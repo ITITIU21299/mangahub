@@ -1,0 +1,1113 @@
+[
+  {
+    "id": "one-piece",
+    "title": "One Piece",
+    "author": "Eiichiro Oda",
+    "genres": ["Action", "Adventure", "Shounen", "Comedy", "Drama"],
+    "status": "Ongoing",
+    "total_chapters": 1100,
+    "description": "Monkey D. Luffy sets off on an adventure to become the Pirate King and find the legendary treasure One Piece.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "naruto",
+    "title": "Naruto",
+    "author": "Masashi Kishimoto",
+    "genres": ["Action", "Adventure", "Shounen", "Comedy", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 700,
+    "description": "Naruto Uzumaki, a young ninja who seeks recognition from his peers and dreams of becoming the Hokage.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "attack-on-titan",
+    "title": "Attack on Titan",
+    "author": "Hajime Isayama",
+    "genres": ["Action", "Drama", "Horror", "Mystery", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 139,
+    "description": "Humanity fights for survival against giant humanoid Titans that threaten to wipe out mankind.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "demon-slayer",
+    "title": "Demon Slayer: Kimetsu no Yaiba",
+    "author": "Koyoharu Gotouge",
+    "genres": ["Action", "Supernatural", "Shounen", "Historical"],
+    "status": "Completed",
+    "total_chapters": 205,
+    "description": "Tanjiro Kamado becomes a demon slayer to save his sister and avenge his family.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "jujutsu-kaisen",
+    "title": "Jujutsu Kaisen",
+    "author": "Gege Akutami",
+    "genres": ["Action", "Supernatural", "Shounen", "Horror"],
+    "status": "Ongoing",
+    "total_chapters": 250,
+    "description": "Yuji Itadori joins his school's Occult Club and becomes a Jujutsu sorcerer to fight cursed spirits.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "my-hero-academia",
+    "title": "My Hero Academia",
+    "author": "Kohei Horikoshi",
+    "genres": ["Action", "Comedy", "School", "Shounen", "Super Power"],
+    "status": "Ongoing",
+    "total_chapters": 420,
+    "description": "Izuku Midoriya dreams of becoming a hero despite being born without a Quirk in a world where superpowers are common.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "chainsaw-man",
+    "title": "Chainsaw Man",
+    "author": "Tatsuki Fujimoto",
+    "genres": ["Action", "Horror", "Shounen", "Supernatural"],
+    "status": "Ongoing",
+    "total_chapters": 160,
+    "description": "Denji merges with his pet devil Pochita to become Chainsaw Man, a devil hunter.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "dragon-ball",
+    "title": "Dragon Ball",
+    "author": "Akira Toriyama",
+    "genres": ["Action", "Adventure", "Comedy", "Shounen", "Super Power"],
+    "status": "Completed",
+    "total_chapters": 519,
+    "description": "Goku's journey from a young boy to Earth's greatest defender against powerful enemies.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "death-note",
+    "title": "Death Note",
+    "author": "Tsugumi Ohba",
+    "genres": ["Mystery", "Psychological", "Shounen", "Supernatural", "Thriller"],
+    "status": "Completed",
+    "total_chapters": 108,
+    "description": "Light Yagami finds a notebook that can kill anyone whose name is written in it.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "fullmetal-alchemist",
+    "title": "Fullmetal Alchemist",
+    "author": "Hiromu Arakawa",
+    "genres": ["Action", "Adventure", "Drama", "Fantasy", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 116,
+    "description": "Two brothers search for the Philosopher's Stone to restore their bodies after a failed alchemy experiment.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "hunter-x-hunter",
+    "title": "Hunter x Hunter",
+    "author": "Yoshihiro Togashi",
+    "genres": ["Action", "Adventure", "Shounen", "Super Power"],
+    "status": "Hiatus",
+    "total_chapters": 400,
+    "description": "Gon Freecss becomes a Hunter to find his father and discovers a world of adventure.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "bleach",
+    "title": "Bleach",
+    "author": "Tite Kubo",
+    "genres": ["Action", "Adventure", "Shounen", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 686,
+    "description": "Ichigo Kurosaki becomes a Soul Reaper to protect the living world from evil spirits.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "tokyo-ghoul",
+    "title": "Tokyo Ghoul",
+    "author": "Sui Ishida",
+    "genres": ["Action", "Drama", "Horror", "Mystery", "Seinen", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 143,
+    "description": "Ken Kaneki becomes a half-ghoul after a near-fatal encounter and must navigate both human and ghoul worlds.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "one-punch-man",
+    "title": "One-Punch Man",
+    "author": "ONE",
+    "genres": ["Action", "Comedy", "Parody", "Sci-Fi", "Seinen", "Super Power"],
+    "status": "Ongoing",
+    "total_chapters": 200,
+    "description": "Saitama can defeat any enemy with a single punch, but struggles with boredom and lack of recognition.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "mob-psycho-100",
+    "title": "Mob Psycho 100",
+    "author": "ONE",
+    "genres": ["Action", "Comedy", "Slice of Life", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 101,
+    "description": "Shigeo Kageyama, an esper with overwhelming psychic powers, tries to live a normal life.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "spy-x-family",
+    "title": "Spy x Family",
+    "author": "Tatsuya Endo",
+    "genres": ["Action", "Comedy", "Shounen", "Slice of Life"],
+    "status": "Ongoing",
+    "total_chapters": 100,
+    "description": "A spy creates a fake family for a mission, but his fake daughter is a telepath and fake wife is an assassin.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "haikyuu",
+    "title": "Haikyuu!!",
+    "author": "Haruichi Furudate",
+    "genres": ["Comedy", "Drama", "School", "Shounen", "Sports"],
+    "status": "Completed",
+    "total_chapters": 402,
+    "description": "Shoyo Hinata joins his high school volleyball team to become the best player despite his short height.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "kuroko-basketball",
+    "title": "Kuroko's Basketball",
+    "author": "Tadatoshi Fujimaki",
+    "genres": ["Comedy", "School", "Shounen", "Sports"],
+    "status": "Completed",
+    "total_chapters": 275,
+    "description": "A high school basketball team aims to become the best in Japan with the help of a phantom player.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "blue-lock",
+    "title": "Blue Lock",
+    "author": "Muneyuki Kaneshiro",
+    "genres": ["Action", "Sports", "Shounen"],
+    "status": "Ongoing",
+    "total_chapters": 280,
+    "description": "Japan's Football Association creates a training program to produce the world's greatest egotist striker.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "your-name",
+    "title": "Your Name",
+    "author": "Makoto Shinkai",
+    "genres": ["Drama", "Romance", "School", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 9,
+    "description": "Two teenagers swap bodies and develop feelings for each other across time and space.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "fruits-basket",
+    "title": "Fruits Basket",
+    "author": "Natsuki Takaya",
+    "genres": ["Comedy", "Drama", "Romance", "Shoujo", "Slice of Life", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 136,
+    "description": "Tohru Honda discovers the Sohma family's secret: they transform into animals of the zodiac when hugged.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "ouran-high-school",
+    "title": "Ouran High School Host Club",
+    "author": "Bisco Hatori",
+    "genres": ["Comedy", "Romance", "School", "Shoujo"],
+    "status": "Completed",
+    "total_chapters": 83,
+    "description": "Haruhi Fujioka joins the Host Club to pay off a debt and discovers friendship and romance.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "kimi-ni-todoke",
+    "title": "Kimi ni Todoke",
+    "author": "Karuho Shiina",
+    "genres": ["Comedy", "Romance", "School", "Shoujo", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 123,
+    "description": "Sawako Kuronuma, misunderstood due to her appearance, tries to make friends and find love.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "aoi-hana",
+    "title": "Aoi Hana",
+    "author": "Takako Shimura",
+    "genres": ["Drama", "Romance", "School", "Shoujo", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 58,
+    "description": "Fumi Manjoume reunites with her childhood friend Akira Okudaira and explores her feelings.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "nana",
+    "title": "Nana",
+    "author": "Ai Yazawa",
+    "genres": ["Comedy", "Drama", "Josei", "Music", "Romance", "Slice of Life"],
+    "status": "Hiatus",
+    "total_chapters": 84,
+    "description": "Two women named Nana meet on a train and become roommates, each pursuing their dreams.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "paradise-kiss",
+    "title": "Paradise Kiss",
+    "author": "Ai Yazawa",
+    "genres": ["Comedy", "Drama", "Josei", "Romance", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 50,
+    "description": "Yukari Hayasaka joins a fashion design group and discovers her passion for modeling.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "berserk",
+    "title": "Berserk",
+    "author": "Kentaro Miura",
+    "genres": ["Action", "Adventure", "Drama", "Fantasy", "Horror", "Seinen", "Supernatural"],
+    "status": "Ongoing",
+    "total_chapters": 375,
+    "description": "Guts, a mercenary warrior, seeks revenge against his former friend who betrayed him.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "vinland-saga",
+    "title": "Vinland Saga",
+    "author": "Makoto Yukimura",
+    "genres": ["Action", "Adventure", "Drama", "Historical", "Seinen"],
+    "status": "Ongoing",
+    "total_chapters": 210,
+    "description": "Thorfinn seeks revenge against the man who killed his father in Viking-era Europe.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "vagabond",
+    "title": "Vagabond",
+    "author": "Takehiko Inoue",
+    "genres": ["Action", "Adventure", "Drama", "Historical", "Seinen"],
+    "status": "Hiatus",
+    "total_chapters": 327,
+    "description": "The story of Miyamoto Musashi, one of Japan's greatest swordsmen, based on historical events.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "monster",
+    "title": "Monster",
+    "author": "Naoki Urasawa",
+    "genres": ["Drama", "Mystery", "Psychological", "Seinen", "Thriller"],
+    "status": "Completed",
+    "total_chapters": 162,
+    "description": "A neurosurgeon saves a boy's life, only to discover the boy grows up to be a serial killer.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "20th-century-boys",
+    "title": "20th Century Boys",
+    "author": "Naoki Urasawa",
+    "genres": ["Drama", "Mystery", "Sci-Fi", "Seinen", "Thriller"],
+    "status": "Completed",
+    "total_chapters": 249,
+    "description": "A group of friends must stop a cult leader who is using their childhood game to destroy the world.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "pluto",
+    "title": "Pluto",
+    "author": "Naoki Urasawa",
+    "genres": ["Drama", "Mystery", "Sci-Fi", "Seinen", "Thriller"],
+    "status": "Completed",
+    "total_chapters": 65,
+    "description": "A robot detective investigates a series of robot and human murders in a futuristic world.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "goodnight-punpun",
+    "title": "Goodnight Punpun",
+    "author": "Inio Asano",
+    "genres": ["Comedy", "Drama", "Psychological", "Romance", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 147,
+    "description": "The coming-of-age story of Punpun Onodera, depicted as a bird, navigating life's challenges.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "solanin",
+    "title": "Solanin",
+    "author": "Inio Asano",
+    "genres": ["Drama", "Music", "Romance", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 27,
+    "description": "A young woman struggles with adulthood and finds meaning through music after a tragedy.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "grand-blue",
+    "title": "Grand Blue",
+    "author": "Kenji Inoue",
+    "genres": ["Comedy", "Seinen", "Slice of Life"],
+    "status": "Ongoing",
+    "total_chapters": 90,
+    "description": "Iori Kitahara moves to his uncle's diving shop and joins a college diving club filled with eccentric characters.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "kaguya-sama",
+    "title": "Kaguya-sama: Love is War",
+    "author": "Aka Akasaka",
+    "genres": ["Comedy", "Romance", "School", "Seinen"],
+    "status": "Completed",
+    "total_chapters": 281,
+    "description": "Two student council members try to make the other confess their love first through psychological warfare.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "oshi-no-ko",
+    "title": "Oshi no Ko",
+    "author": "Aka Akasaka",
+    "genres": ["Drama", "Mystery", "Seinen", "Supernatural"],
+    "status": "Ongoing",
+    "total_chapters": 150,
+    "description": "A doctor is reincarnated as the son of an idol and discovers the dark side of the entertainment industry.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "komi-cant-communicate",
+    "title": "Komi Can't Communicate",
+    "author": "Tomohito Oda",
+    "genres": ["Comedy", "Romance", "School", "Shounen", "Slice of Life"],
+    "status": "Ongoing",
+    "total_chapters": 420,
+    "description": "Shouko Komi wants to make 100 friends but has extreme social anxiety.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "dr-stone",
+    "title": "Dr. Stone",
+    "author": "Riichiro Inagaki",
+    "genres": ["Adventure", "Comedy", "Sci-Fi", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 232,
+    "description": "Humanity is petrified, and Senku Ishigami uses science to rebuild civilization.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "promised-neverland",
+    "title": "The Promised Neverland",
+    "author": "Kaiu Shirai",
+    "genres": ["Drama", "Horror", "Mystery", "Sci-Fi", "Shounen", "Thriller"],
+    "status": "Completed",
+    "total_chapters": 181,
+    "description": "Orphans discover their orphanage is a farm raising children as food for demons.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "fire-force",
+    "title": "Fire Force",
+    "author": "Atsushi Ohkubo",
+    "genres": ["Action", "Sci-Fi", "Shounen", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 304,
+    "description": "Shinra Kusakabe joins Special Fire Force Company 8 to fight Infernals and uncover a conspiracy.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "black-clover",
+    "title": "Black Clover",
+    "author": "Yuki Tabata",
+    "genres": ["Action", "Comedy", "Fantasy", "Shounen"],
+    "status": "Ongoing",
+    "total_chapters": 370,
+    "description": "Asta, a boy born without magic, dreams of becoming the Wizard King.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "fairy-tail",
+    "title": "Fairy Tail",
+    "author": "Hiro Mashima",
+    "genres": ["Action", "Adventure", "Comedy", "Fantasy", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 545,
+    "description": "Lucy Heartfilia joins the Fairy Tail wizard guild and goes on magical adventures.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "seven-deadly-sins",
+    "title": "The Seven Deadly Sins",
+    "author": "Nakaba Suzuki",
+    "genres": ["Action", "Adventure", "Fantasy", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 346,
+    "description": "Princess Elizabeth searches for the Seven Deadly Sins to save her kingdom.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "soul-eater",
+    "title": "Soul Eater",
+    "author": "Atsushi Ohkubo",
+    "genres": ["Action", "Comedy", "Fantasy", "Shounen", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 113,
+    "description": "Students at Death Weapon Meister Academy collect evil souls to create a Death Scythe.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "d-gray-man",
+    "title": "D.Gray-man",
+    "author": "Katsura Hoshino",
+    "genres": ["Action", "Adventure", "Comedy", "Shounen", "Supernatural"],
+    "status": "Hiatus",
+    "total_chapters": 242,
+    "description": "Allen Walker joins the Black Order to fight Akuma and save humanity.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "noragami",
+    "title": "Noragami",
+    "author": "Adachitoka",
+    "genres": ["Action", "Adventure", "Comedy", "Shounen", "Supernatural"],
+    "status": "Ongoing",
+    "total_chapters": 110,
+    "description": "A minor god named Yato teams up with a human girl to gain recognition and build a shrine.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "seraph-of-the-end",
+    "title": "Seraph of the End",
+    "author": "Takaya Kagami",
+    "genres": ["Action", "Drama", "Shounen", "Supernatural", "Vampire"],
+    "status": "Ongoing",
+    "total_chapters": 130,
+    "description": "Humanity fights against vampires in a post-apocalyptic world.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "world-trigger",
+    "title": "World Trigger",
+    "author": "Daisuke Ashihara",
+    "genres": ["Action", "Sci-Fi", "Shounen", "Super Power"],
+    "status": "Ongoing",
+    "total_chapters": 250,
+    "description": "Border agents defend Earth from Neighbors using advanced Trigger technology.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "assassination-classroom",
+    "title": "Assassination Classroom",
+    "author": "Yusei Matsui",
+    "genres": ["Action", "Comedy", "School", "Shounen", "Sci-Fi"],
+    "status": "Completed",
+    "total_chapters": 180,
+    "description": "Students must assassinate their alien teacher before he destroys Earth.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "the-disastrous-life-of-saiki-k",
+    "title": "The Disastrous Life of Saiki K.",
+    "author": "Shuichi Aso",
+    "genres": ["Comedy", "School", "Shounen", "Slice of Life", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 288,
+    "description": "A psychic high school student tries to live a normal life despite his overwhelming powers.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "gintama",
+    "title": "Gintama",
+    "author": "Hideaki Sorachi",
+    "genres": ["Action", "Comedy", "Historical", "Parody", "Samurai", "Sci-Fi", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 704,
+    "description": "Gintoki Sakata runs an odd jobs business in an alternate-history Edo period invaded by aliens.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "slam-dunk",
+    "title": "Slam Dunk",
+    "author": "Takehiko Inoue",
+    "genres": ["Comedy", "School", "Shounen", "Sports"],
+    "status": "Completed",
+    "total_chapters": 276,
+    "description": "Hanamichi Sakuragi joins his school's basketball team to impress a girl.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "prince-of-tennis",
+    "title": "The Prince of Tennis",
+    "author": "Takeshi Konomi",
+    "genres": ["Comedy", "School", "Shounen", "Sports"],
+    "status": "Completed",
+    "total_chapters": 379,
+    "description": "Ryouma Echizen joins Seishun Academy's tennis team and aims to become the best.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "yowamushi-pedal",
+    "title": "Yowamushi Pedal",
+    "author": "Wataru Watanabe",
+    "genres": ["Comedy", "School", "Shounen", "Sports"],
+    "status": "Ongoing",
+    "total_chapters": 750,
+    "description": "Sakamichi Onoda joins his school's cycling club and discovers his talent for cycling.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "diamond-no-ace",
+    "title": "Diamond no Ace",
+    "author": "Yuji Terajima",
+    "genres": ["School", "Shounen", "Sports"],
+    "status": "Completed",
+    "total_chapters": 413,
+    "description": "Eijun Sawamura joins Seidou High School's baseball team to become the ace pitcher.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "aoashi",
+    "title": "Aoashi",
+    "author": "Yugo Kobayashi",
+    "genres": ["School", "Shounen", "Sports"],
+    "status": "Ongoing",
+    "total_chapters": 350,
+    "description": "Ashito Aoi joins Tokyo City Esperion FC's youth team to become a professional soccer player.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "yuri-on-ice",
+    "title": "Yuri!!! on ICE",
+    "author": "Mitsurou Kubo",
+    "genres": ["Comedy", "Romance", "Seinen", "Sports"],
+    "status": "Completed",
+    "total_chapters": 12,
+    "description": "Yuri Katsuki returns to competitive figure skating with the help of his idol Victor Nikiforov.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "skip-beat",
+    "title": "Skip Beat!",
+    "author": "Yoshiki Nakamura",
+    "genres": ["Comedy", "Drama", "Romance", "Shoujo"],
+    "status": "Ongoing",
+    "total_chapters": 310,
+    "description": "Kyoko Mogami enters the entertainment industry to get revenge on her ex-boyfriend.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "akatsuki-no-yona",
+    "title": "Akatsuki no Yona",
+    "author": "Mizuho Kusanagi",
+    "genres": ["Action", "Adventure", "Comedy", "Fantasy", "Romance", "Shoujo"],
+    "status": "Ongoing",
+    "total_chapters": 250,
+    "description": "Princess Yona embarks on a journey to find the four dragon warriors and reclaim her kingdom.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "kamisama-kiss",
+    "title": "Kamisama Kiss",
+    "author": "Julietta Suzuki",
+    "genres": ["Comedy", "Fantasy", "Romance", "Shoujo", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 149,
+    "description": "Nanami Momozono becomes a land god and forms a contract with a fox familiar.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "maid-sama",
+    "title": "Maid Sama!",
+    "author": "Hiro Fujiwara",
+    "genres": ["Comedy", "Romance", "School", "Shoujo"],
+    "status": "Completed",
+    "total_chapters": 86,
+    "description": "Misaki Ayuzawa works at a maid cafe while being student council president.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "special-a",
+    "title": "Special A",
+    "author": "Maki Minami",
+    "genres": ["Comedy", "Romance", "School", "Shoujo"],
+    "status": "Completed",
+    "total_chapters": 99,
+    "description": "Hikari Hanazono tries to beat Kei Takishima, the top student, in everything.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "lovely-complex",
+    "title": "Lovely Complex",
+    "author": "Aya Nakahara",
+    "genres": ["Comedy", "Romance", "School", "Shoujo"],
+    "status": "Completed",
+    "total_chapters": 100,
+    "description": "Risa Koizumi and Atsushi Otani, an odd couple due to height difference, develop feelings.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "orange",
+    "title": "Orange",
+    "author": "Ichigo Takano",
+    "genres": ["Drama", "Romance", "School", "Shoujo", "Sci-Fi", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 27,
+    "description": "Naho receives letters from her future self to prevent a tragedy.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "aoi-haru",
+    "title": "Ao Haru Ride",
+    "author": "Io Sakisaka",
+    "genres": ["Comedy", "Drama", "Romance", "School", "Shoujo"],
+    "status": "Completed",
+    "total_chapters": 49,
+    "description": "Futaba Yoshioka reunites with her first love Kou Mabuchi in high school.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "strobe-edge",
+    "title": "Strobe Edge",
+    "author": "Io Sakisaka",
+    "genres": ["Comedy", "Romance", "School", "Shoujo"],
+    "status": "Completed",
+    "total_chapters": 40,
+    "description": "Ninako Kinoshita falls in love with Ren Ichinose, a popular boy with a girlfriend.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "wotakoi",
+    "title": "Wotakoi: Love is Hard for Otaku",
+    "author": "Fujita",
+    "genres": ["Comedy", "Romance", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 87,
+    "description": "Two otaku coworkers start dating and navigate their relationship.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "re-life",
+    "title": "ReLIFE",
+    "author": "Yayoiso",
+    "genres": ["Comedy", "Drama", "Romance", "School", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 222,
+    "description": "A 27-year-old NEET gets a chance to relive his high school year through an experiment.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "barakamon",
+    "title": "Barakamon",
+    "author": "Satsuki Yoshino",
+    "genres": ["Comedy", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 140,
+    "description": "A calligrapher moves to a remote island to find inspiration.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "silent-voice",
+    "title": "A Silent Voice",
+    "author": "Yoshitoki Oima",
+    "genres": ["Drama", "Romance", "School", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 64,
+    "description": "A former bully seeks redemption by reconnecting with a deaf girl he tormented.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "march-comes-in-like-a-lion",
+    "title": "March Comes in Like a Lion",
+    "author": "Chica Umino",
+    "genres": ["Drama", "Seinen", "Slice of Life", "Sports"],
+    "status": "Ongoing",
+    "total_chapters": 200,
+    "description": "Rei Kiriyama, a professional shogi player, finds warmth in a family of three sisters.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "honey-and-clover",
+    "title": "Honey and Clover",
+    "author": "Chica Umino",
+    "genres": ["Comedy", "Drama", "Josei", "Romance", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 65,
+    "description": "Art students navigate love, friendship, and their dreams in college.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "natsume-book-of-friends",
+    "title": "Natsume's Book of Friends",
+    "author": "Yuki Midorikawa",
+    "genres": ["Comedy", "Drama", "Shoujo", "Slice of Life", "Supernatural"],
+    "status": "Ongoing",
+    "total_chapters": 120,
+    "description": "Takashi Natsume can see spirits and works to return names from his grandmother's book.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "mushishi",
+    "title": "Mushishi",
+    "author": "Yuki Urushibara",
+    "genres": ["Adventure", "Drama", "Mystery", "Seinen", "Slice of Life", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 50,
+    "description": "Ginko travels Japan researching Mushi, mysterious creatures that exist between life and death.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "yotsuba",
+    "title": "Yotsuba&!",
+    "author": "Kiyohiko Azuma",
+    "genres": ["Comedy", "Slice of Life"],
+    "status": "Ongoing",
+    "total_chapters": 130,
+    "description": "Yotsuba Koiwai, a cheerful 5-year-old, explores the world with endless curiosity.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "nichijou",
+    "title": "Nichijou",
+    "author": "Keiichi Arawi",
+    "genres": ["Comedy", "School", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 200,
+    "description": "The daily lives of high school students and a robot girl in a surreal world.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "lucky-star",
+    "title": "Lucky Star",
+    "author": "Kagami Yoshimizu",
+    "genres": ["Comedy", "School", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 200,
+    "description": "Four high school girls navigate daily life with humor and pop culture references.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "azumanga-daioh",
+    "title": "Azumanga Daioh",
+    "author": "Kiyohiko Azuma",
+    "genres": ["Comedy", "School", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 100,
+    "description": "The daily lives of six high school girls and their eccentric teacher.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "k-on",
+    "title": "K-On!",
+    "author": "Kakifly",
+    "genres": ["Comedy", "Music", "School", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 100,
+    "description": "Four high school girls form a light music club and bond through music.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "non-non-biyori",
+    "title": "Non Non Biyori",
+    "author": "Atto",
+    "genres": ["Comedy", "School", "Slice of Life"],
+    "status": "Ongoing",
+    "total_chapters": 180,
+    "description": "Students at a small rural school enjoy their peaceful daily lives.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "hinamatsuri",
+    "title": "Hinamatsuri",
+    "author": "Masao Ohtake",
+    "genres": ["Comedy", "Sci-Fi", "Seinen", "Slice of Life", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 120,
+    "description": "A yakuza member takes in a psychic girl and their lives change dramatically.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "usagi-drop",
+    "title": "Usagi Drop",
+    "author": "Yumi Unita",
+    "genres": ["Comedy", "Josei", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 60,
+    "description": "Daikichi Kawachi adopts his grandfather's illegitimate daughter Rin.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "sweetness-and-lightning",
+    "title": "Sweetness and Lightning",
+    "author": "Gido Amagakure",
+    "genres": ["Comedy", "School", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 100,
+    "description": "A single father learns to cook for his daughter with the help of a student.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "silver-spoon",
+    "title": "Silver Spoon",
+    "author": "Hiromu Arakawa",
+    "genres": ["Comedy", "School", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 133,
+    "description": "A city boy enrolls in an agricultural high school to escape academic pressure.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "bakuman",
+    "title": "Bakuman",
+    "author": "Tsugumi Ohba",
+    "genres": ["Comedy", "Drama", "Romance", "School", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 176,
+    "description": "Two middle school students aim to become successful manga artists.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "shokugeki-no-soma",
+    "title": "Food Wars!: Shokugeki no Soma",
+    "author": "Yuto Tsukuda",
+    "genres": ["Comedy", "Ecchi", "School", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 315,
+    "description": "Soma Yukihira enrolls in an elite culinary school to become a chef.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "toriko",
+    "title": "Toriko",
+    "author": "Mitsutoshi Shimabukuro",
+    "genres": ["Action", "Adventure", "Comedy", "Fantasy", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 396,
+    "description": "Toriko, a Gourmet Hunter, searches for the world's rarest ingredients.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "beastars",
+    "title": "Beastars",
+    "author": "Paru Itagaki",
+    "genres": ["Drama", "Romance", "School", "Seinen", "Slice of Life"],
+    "status": "Completed",
+    "total_chapters": 196,
+    "description": "In a world of anthropomorphic animals, a wolf and rabbit navigate their relationship.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "land-of-the-lustrous",
+    "title": "Land of the Lustrous",
+    "author": "Haruko Ichikawa",
+    "genres": ["Action", "Drama", "Fantasy", "Sci-Fi", "Seinen"],
+    "status": "Ongoing",
+    "total_chapters": 105,
+    "description": "Phosphophyllite, a gem person, seeks purpose in a world under attack by moon people.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "houseki-no-kuni",
+    "title": "Houseki no Kuni",
+    "author": "Haruko Ichikawa",
+    "genres": ["Action", "Drama", "Fantasy", "Sci-Fi", "Seinen"],
+    "status": "Ongoing",
+    "total_chapters": 105,
+    "description": "Immortal gem people fight against moon people who want to turn them into decorations.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "dorohedoro",
+    "title": "Dorohedoro",
+    "author": "Q Hayashida",
+    "genres": ["Action", "Comedy", "Fantasy", "Horror", "Seinen", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 167,
+    "description": "Caiman searches for the sorcerer who turned his head into a lizard's.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "hellsing",
+    "title": "Hellsing",
+    "author": "Kouta Hirano",
+    "genres": ["Action", "Horror", "Seinen", "Supernatural", "Vampire"],
+    "status": "Completed",
+    "total_chapters": 95,
+    "description": "The Hellsing Organization fights supernatural threats, led by the vampire Alucard.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "elfen-lied",
+    "title": "Elfen Lied",
+    "author": "Lynn Okamoto",
+    "genres": ["Action", "Drama", "Horror", "Romance", "Seinen", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 107,
+    "description": "Lucy, a mutated human with telekinetic powers, escapes from a research facility.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "another",
+    "title": "Another",
+    "author": "Yukito Ayatsuji",
+    "genres": ["Horror", "Mystery", "School", "Supernatural", "Thriller"],
+    "status": "Completed",
+    "total_chapters": 44,
+    "description": "Kouichi Sakakibara transfers to a cursed class where students die mysteriously.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "junji-ito-collection",
+    "title": "Junji Ito Collection",
+    "author": "Junji Ito",
+    "genres": ["Horror", "Mystery", "Supernatural", "Thriller"],
+    "status": "Ongoing",
+    "total_chapters": 200,
+    "description": "A collection of horror stories featuring body horror and psychological terror.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "uzumaki",
+    "title": "Uzumaki",
+    "author": "Junji Ito",
+    "genres": ["Horror", "Mystery", "Supernatural", "Thriller"],
+    "status": "Completed",
+    "total_chapters": 20,
+    "description": "A town becomes obsessed with spirals, leading to horrific transformations.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "tomie",
+    "title": "Tomie",
+    "author": "Junji Ito",
+    "genres": ["Horror", "Mystery", "Supernatural", "Thriller"],
+    "status": "Completed",
+    "total_chapters": 20,
+    "description": "Tomie Kawakami is a beautiful girl who drives men to murder and always returns.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "parasyte",
+    "title": "Parasyte",
+    "author": "Hitoshi Iwaaki",
+    "genres": ["Action", "Drama", "Horror", "Sci-Fi", "Seinen"],
+    "status": "Completed",
+    "total_chapters": 64,
+    "description": "Shinichi Izumi's right hand is taken over by an alien parasite.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "ajin",
+    "title": "Ajin: Demi-Human",
+    "author": "Gamon Sakurai",
+    "genres": ["Action", "Horror", "Mystery", "Seinen", "Supernatural"],
+    "status": "Completed",
+    "total_chapters": 84,
+    "description": "Kei Nagai discovers he is an Ajin, an immortal being hunted by the government.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "psycho-pass",
+    "title": "Psycho-Pass",
+    "author": "Hikaru Miyoshi",
+    "genres": ["Action", "Mystery", "Police", "Psychological", "Sci-Fi", "Seinen"],
+    "status": "Ongoing",
+    "total_chapters": 60,
+    "description": "Inspectors enforce the law using a system that measures criminal potential.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "ghost-in-the-shell",
+    "title": "Ghost in the Shell",
+    "author": "Masamune Shirow",
+    "genres": ["Action", "Mecha", "Police", "Sci-Fi", "Seinen"],
+    "status": "Completed",
+    "total_chapters": 20,
+    "description": "Major Motoko Kusanagi leads Section 9 in a cyberpunk future.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "akira",
+    "title": "Akira",
+    "author": "Katsuhiro Otomo",
+    "genres": ["Action", "Drama", "Horror", "Sci-Fi", "Seinen"],
+    "status": "Completed",
+    "total_chapters": 120,
+    "description": "In Neo-Tokyo, a biker gang member gains telekinetic powers after an accident.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "blame",
+    "title": "Blame!",
+    "author": "Tsutomu Nihei",
+    "genres": ["Action", "Horror", "Mystery", "Sci-Fi", "Seinen"],
+    "status": "Completed",
+    "total_chapters": 65,
+    "description": "Killy searches for humans with Net Terminal Genes in a vast megastructure.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "knights-of-sidonia",
+    "title": "Knights of Sidonia",
+    "author": "Tsutomu Nihei",
+    "genres": ["Action", "Mecha", "Sci-Fi", "Seinen", "Space"],
+    "status": "Completed",
+    "total_chapters": 78,
+    "description": "Humanity fights aliens from a generation ship after Earth's destruction.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "gundam-origin",
+    "title": "Mobile Suit Gundam: The Origin",
+    "author": "Yoshikazu Yasuhiko",
+    "genres": ["Action", "Drama", "Mecha", "Military", "Sci-Fi", "Seinen", "Space"],
+    "status": "Completed",
+    "total_chapters": 120,
+    "description": "The origin story of the One Year War and the rise of Amuro Ray.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "evangelion",
+    "title": "Neon Genesis Evangelion",
+    "author": "Yoshiyuki Sadamoto",
+    "genres": ["Action", "Drama", "Mecha", "Psychological", "Sci-Fi", "Seinen"],
+    "status": "Completed",
+    "total_chapters": 96,
+    "description": "Teenagers pilot giant robots to save humanity from mysterious Angels.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "code-geass",
+    "title": "Code Geass",
+    "author": "Goro Taniguchi",
+    "genres": ["Action", "Mecha", "Military", "School", "Sci-Fi", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 56,
+    "description": "Lelouch gains the power of Geass and leads a rebellion against Britannia.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "gurren-lagann",
+    "title": "Gurren Lagann",
+    "author": "Kazuki Nakashima",
+    "genres": ["Action", "Comedy", "Mecha", "Sci-Fi", "Shounen"],
+    "status": "Completed",
+    "total_chapters": 27,
+    "description": "Simon and Kamina drill to the surface and fight against the Spiral King.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "full-metal-panic",
+    "title": "Full Metal Panic!",
+    "author": "Shoji Gatoh",
+    "genres": ["Action", "Comedy", "Mecha", "Military", "Romance", "School", "Sci-Fi"],
+    "status": "Completed",
+    "total_chapters": 120,
+    "description": "Sousuke Sagara protects Kaname Chidori from terrorists using advanced mecha.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  },
+  {
+    "id": "macross",
+    "title": "Macross",
+    "author": "Shoji Kawamori",
+    "genres": ["Action", "Mecha", "Military", "Music", "Romance", "Sci-Fi", "Space"],
+    "status": "Completed",
+    "total_chapters": 36,
+    "description": "Humanity fights aliens using transforming fighter jets and music.",
+    "cover_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400"
+  }
+]
+

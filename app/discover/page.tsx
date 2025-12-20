@@ -1,4 +1,144 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+
+interface Manga {
+  id: string;
+  title: string;
+  author: string;
+  genres: string[];
+  status: string;
+  total_chapters: number;
+  description: string;
+  cover_url: string;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
+interface SearchResponse {
+  data: Manga[];
+  pagination: Pagination;
+}
+
 export default function DiscoverPage() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [mangas, setMangas] = useState<Manga[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    total_pages: 0,
+  });
+
+  const genres = [
+    "All",
+    "Action",
+    "Romance",
+    "Fantasy",
+    "Comedy",
+    "Drama",
+    "Horror",
+    "Sci-Fi",
+  ];
+  const statuses = ["All", "Ongoing", "Completed", "Hiatus"];
+
+  const fetchManga = async (page: number = 1) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem("mangahub_token");
+      if (!token) {
+        router.push("/auth/signin");
+        return;
+      }
+
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) {
+        params.append("q", searchQuery.trim());
+      }
+      if (selectedGenre && selectedGenre !== "All") {
+        params.append("genre", selectedGenre);
+      }
+      if (selectedStatus && selectedStatus !== "All") {
+        params.append("status", selectedStatus);
+      }
+      params.append("page", page.toString());
+      params.append("limit", "20");
+
+      const res = await fetch(`${API_BASE}/manga?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem("mangahub_token");
+        router.push("/auth/signin");
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to load manga");
+        setMangas([]);
+        return;
+      }
+
+      const data: SearchResponse = await res.json();
+      setMangas(data.data || []);
+      setPagination(data.pagination || pagination);
+    } catch (err) {
+      setError("Unable to reach server. Please try again.");
+      setMangas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchManga(1);
+  }, [selectedGenre, selectedStatus]);
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    fetchManga(1);
+  };
+
+  const handleGenreClick = (genre: string) => {
+    if (genre === "All") {
+      setSelectedGenre(null);
+    } else {
+      setSelectedGenre(genre);
+    }
+  };
+
+  const handleStatusClick = (status: string) => {
+    if (status === "All") {
+      setSelectedStatus(null);
+    } else {
+      setSelectedStatus(status);
+    }
+  };
+
+  const handleMangaClick = (mangaId: string) => {
+    // Navigate to manga details page (to be implemented later)
+    router.push(`/manga/${mangaId}`);
+  };
+
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden pb-24 bg-background-light text-text-main-light dark:bg-background-dark dark:text-text-main-dark font-sans">
       {/* Top App Bar */}
@@ -19,119 +159,213 @@ export default function DiscoverPage() {
 
       {/* Search Bar */}
       <div className="px-6 py-2">
-        <label className="flex w-full flex-col">
-          <div className="flex h-14 w-full items-center overflow-hidden rounded-full bg-surface-light shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 dark:bg-surface-dark dark:ring-white/10 dark:focus-within:ring-offset-background-dark">
-            <div className="flex items-center justify-center pl-5 text-text-sub-light dark:text-text-sub-dark">
-              <span className="material-symbols-outlined text-[24px]">
-                search
-              </span>
+        <form onSubmit={handleSearch}>
+          <label className="flex w-full flex-col">
+            <div className="flex h-14 w-full items-center overflow-hidden rounded-full bg-surface-light shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 dark:bg-surface-dark dark:ring-white/10 dark:focus-within:ring-offset-background-dark">
+              <div className="flex items-center justify-center pl-5 text-text-sub-light dark:text-text-sub-dark">
+                <span className="material-symbols-outlined text-[24px]">
+                  search
+                </span>
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-full flex-1 border-none bg-transparent px-4 text-base font-medium placeholder:text-text-sub-light/70 focus:outline-none focus:ring-0 dark:placeholder:text-text-sub-dark/70"
+                placeholder="Search titles or authors..."
+              />
+              <button
+                type="submit"
+                className="mr-2 rounded-full p-2 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+              >
+                <span className="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark">
+                  search
+                </span>
+              </button>
             </div>
-            <input
-              className="h-full flex-1 border-none bg-transparent px-4 text-base font-medium placeholder:text-text-sub-light/70 focus:outline-none focus:ring-0 dark:placeholder:text-text-sub-dark/70"
-              placeholder="Search titles or authors..."
-            />
-            <button className="mr-2 rounded-full p-2 transition-colors hover:bg-black/5 dark:hover:bg-white/10">
-              <span className="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark">
-                tune
-              </span>
-            </button>
-          </div>
-        </label>
+          </label>
+        </form>
       </div>
 
       {/* Filter Chips */}
       <div className="no-scrollbar flex w-full gap-3 overflow-x-auto px-6 py-4">
-        <button className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary pl-6 pr-6 active:scale-95">
-          <span className="text-sm font-bold leading-normal text-black">
+        <button
+          onClick={() => handleGenreClick("All")}
+          className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 transition-transform active:scale-95 ${
+            !selectedGenre
+              ? "bg-primary"
+              : "bg-surface-light ring-1 ring-black/5 dark:bg-surface-dark dark:ring-white/10"
+          }`}
+        >
+          <span
+            className={`text-sm font-bold leading-normal ${
+              !selectedGenre
+                ? "text-black"
+                : "text-text-main-light dark:text-text-main-dark"
+            }`}
+          >
             All
           </span>
         </button>
-        <button className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-light pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:bg-surface-dark dark:ring-white/10">
-          <span className="text-sm font-medium leading-normal text-text-main-light dark:text-text-main-dark">
-            Action
-          </span>
-        </button>
-        <button className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-light pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:bg-surface-dark dark:ring-white/10">
-          <span className="text-sm font-medium leading-normal text-text-main-light dark:text-text-main-dark">
-            Romance
-          </span>
-        </button>
-        <button className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-light pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:bg-surface-dark dark:ring-white/10">
-          <span className="text-sm font-medium leading-normal text-text-main-light dark:text-text-main-dark">
-            Ongoing
-          </span>
-        </button>
-        <button className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-light pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:bg-surface-dark dark:ring-white/10">
-          <span className="text-sm font-medium leading-normal text-text-main-light dark:text-text-main-dark">
-            Fantasy
-          </span>
-        </button>
+        {genres.slice(1).map((genre) => (
+          <button
+            key={genre}
+            onClick={() => handleGenreClick(genre)}
+            className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:ring-white/10 ${
+              selectedGenre === genre
+                ? "bg-primary"
+                : "bg-surface-light dark:bg-surface-dark"
+            }`}
+          >
+            <span
+              className={`text-sm font-medium leading-normal ${
+                selectedGenre === genre
+                  ? "font-bold text-black"
+                  : "text-text-main-light dark:text-text-main-dark"
+              }`}
+            >
+              {genre}
+            </span>
+          </button>
+        ))}
+        {statuses.slice(1).map((status) => (
+          <button
+            key={status}
+            onClick={() => handleStatusClick(status)}
+            className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:ring-white/10 ${
+              selectedStatus === status
+                ? "bg-primary"
+                : "bg-surface-light dark:bg-surface-dark"
+            }`}
+          >
+            <span
+              className={`text-sm font-medium leading-normal ${
+                selectedStatus === status
+                  ? "font-bold text-black"
+                  : "text-text-main-light dark:text-text-main-dark"
+              }`}
+            >
+              {status}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* Results Grid (static demo content for now) */}
+      {/* Results Grid */}
       <div className="px-6 py-2">
-        <h3 className="mb-4 flex items-center gap-2 text-xl font-bold">
-          Trending Now
-          <span
-            className="material-symbols-outlined text-primary"
-            style={{ fontVariationSettings: '"FILL" 1' }}
-          >
-            local_fire_department
-          </span>
-        </h3>
-
-        <div className="grid grid-cols-2 gap-4 pb-4">
-          {/* Example cards – real data will come from the Go backend API later */}
-          {/* One Piece */}
-          <div className="group flex cursor-pointer flex-col gap-3">
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
-              <div
-                className="h-full w-full bg-cover bg-center bg-no-repeat transform transition-transform duration-500 group-hover:scale-110"
-                style={{
-                  backgroundImage:
-                    "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAC76vJiO96a7t_saHP5NRPBjaOFVv-VFBP34HyNRCsiKT9aRGe7pFLdeohzNVp-vY_xJvBP3l1glPKE_S-re_f9f_YXF6jB9MUH6Nrj8L1XVjxJ8OmEE8KMzj498PQbCOfO3UGJdfuAHl3bCq8l7elzNyq9di_aJbMctX8b9Q5atfD8ZCW4z0kOEcBRGtkYV3ShrRIQ13As-UxdFcTNbcvF56OgoTb2qsiwBOFsXu7aLBZH33z8dQpAVeUlp6OeBGZx_xB3HA2f5c')",
-                }}
-              />
-              <div className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-black">
-                Ongoing
-              </div>
-            </div>
-            <div>
-              <p className="line-clamp-1 text-base font-bold leading-tight">
-                One Piece
-              </p>
-              <p className="mt-1 text-xs font-medium leading-normal text-text-sub-light dark:text-text-sub-dark">
-                Eiichiro Oda
-              </p>
-            </div>
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-text-sub-light dark:text-text-sub-dark">
+              Loading...
+            </p>
           </div>
+        )}
 
-          {/* Jujutsu Kaisen */}
-          <div className="group flex cursor-pointer flex-col gap-3">
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
-              <div
-                className="h-full w-full bg-cover bg-center bg-no-repeat transform transition-transform duration-500 group-hover:scale-110"
-                style={{
-                  backgroundImage:
-                    "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDgZLAFKgSR3Egkz2gW4YFu0Q4xEqWwaSapacyfp84nkIcMRulO9nJmm5skwpD7WYTgzVRnN-GgTStveFGJIT608mzyo_BqwSzM5rA1MiVR759ufsX0FzS2eokaWvZaA-0DJmUDvQng0c42RxFvDc-UE4Dcw5OOSeSZH_ylRB2Xv1LbVN8u8AZ6HWBwwfB5YHrsJ5D_MbI77PRaU5a9fGGZr36DKUg5SVX3wKpn4IvA2iqf1SyOu02j2Vr6h0iQPgkoeQXSwXVI8eM')",
-                }}
-              />
-              <div className="absolute left-2 top-2 rounded-full bg-surface-light/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-black dark:bg-black/80 dark:text-white">
-                Hot
-              </div>
-            </div>
-            <div>
-              <p className="line-clamp-1 text-base font-bold leading-tight">
-                Jujutsu Kaisen
-              </p>
-              <p className="mt-1 text-xs font-medium leading-normal text-text-sub-light dark:text-text-sub-dark">
-                Gege Akutami
-              </p>
-            </div>
+        {error && (
+          <div className="rounded-2xl bg-red-100 px-4 py-3 text-sm font-medium text-red-800 dark:bg-red-900/40 dark:text-red-200">
+            {error}
           </div>
+        )}
 
-          {/* Other demo cards omitted for brevity */}
-        </div>
+        {!loading && !error && mangas.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <span className="material-symbols-outlined mb-4 text-6xl text-text-sub-light dark:text-text-sub-dark">
+              search_off
+            </span>
+            <p className="text-lg font-semibold text-text-main-light dark:text-text-main-dark">
+              No results found
+            </p>
+            <p className="mt-2 text-sm text-text-sub-light dark:text-text-sub-dark">
+              Try adjusting your search or filters
+            </p>
+          </div>
+        )}
+
+        {!loading && !error && mangas.length > 0 && (
+          <>
+            <h3 className="mb-4 flex items-center gap-2 text-xl font-bold">
+              {searchQuery || selectedGenre || selectedStatus
+                ? "Search Results"
+                : "All Manga"}
+              {pagination.total > 0 && (
+                <span className="text-sm font-normal text-text-sub-light dark:text-text-sub-dark">
+                  ({pagination.total}{" "}
+                  {pagination.total === 1 ? "result" : "results"})
+                </span>
+              )}
+            </h3>
+
+            <div className="grid grid-cols-2 gap-4 pb-4">
+              {mangas.map((manga) => (
+                <div
+                  key={manga.id}
+                  onClick={() => handleMangaClick(manga.id)}
+                  className="group flex cursor-pointer flex-col gap-3"
+                >
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
+                    {manga.cover_url ? (
+                      <img
+                        src={manga.cover_url}
+                        alt={manga.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gray-200 dark:bg-gray-800">
+                        <span className="material-symbols-outlined text-4xl text-text-sub-light dark:text-text-sub-dark">
+                          image
+                        </span>
+                      </div>
+                    )}
+                    {manga.status && (
+                      <div className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-black">
+                        {manga.status}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="line-clamp-1 text-base font-bold leading-tight">
+                      {manga.title}
+                    </p>
+                    <p className="mt-1 text-xs font-medium leading-normal text-text-sub-light dark:text-text-sub-dark">
+                      {manga.author || "Unknown Author"}
+                    </p>
+                    {manga.genres && manga.genres.length > 0 && (
+                      <p className="mt-1 text-xs text-text-sub-light dark:text-text-sub-dark">
+                        {manga.genres.slice(0, 2).join(", ")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {pagination.total_pages > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-2 pb-4">
+                <button
+                  onClick={() => fetchManga(pagination.page - 1)}
+                  disabled={pagination.page <= 1}
+                  className="rounded-full bg-surface-light px-4 py-2 text-sm font-medium ring-1 ring-black/5 transition-colors disabled:opacity-50 dark:bg-surface-dark dark:ring-white/10"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                  Page {pagination.page} of {pagination.total_pages}
+                </span>
+                <button
+                  onClick={() => fetchManga(pagination.page + 1)}
+                  disabled={pagination.page >= pagination.total_pages}
+                  className="rounded-full bg-surface-light px-4 py-2 text-sm font-medium ring-1 ring-black/5 transition-colors disabled:opacity-50 dark:bg-surface-dark dark:ring-white/10"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Bottom Navigation */}
@@ -181,5 +415,3 @@ export default function DiscoverPage() {
     </div>
   );
 }
-
-

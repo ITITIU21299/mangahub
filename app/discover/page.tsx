@@ -402,7 +402,7 @@ export default function DiscoverPage() {
             <span className="text-[10px] font-medium">Library</span>
           </a>
           <a
-            href="/auth/signin"
+            href="/profile"
             className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
           >
             <span className="material-symbols-outlined text-[26px]">

@@ -147,7 +147,7 @@ export default function LibraryPage() {
             <span className="text-[10px] font-medium">Search</span>
           </a>
           <a
-            href="/auth/signin"
+            href="/profile"
             className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
           >
             <span className="material-symbols-outlined">person</span>
@@ -158,5 +158,3 @@ export default function LibraryPage() {
     </div>
   );
 }
-
-

@@ -295,14 +295,14 @@ export default function DiscoverPage() {
               )}
             </h3>
 
-            <div className="grid grid-cols-2 gap-4 pb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-4">
               {mangas.map((manga) => (
                 <div
                   key={manga.id}
                   onClick={() => handleMangaClick(manga.id)}
-                  className="group flex cursor-pointer flex-col gap-3"
+                  className="group flex cursor-pointer flex-col gap-2"
                 >
-                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg">
                     {manga.cover_url ? (
                       <img
                         src={manga.cover_url}
@@ -314,29 +314,24 @@ export default function DiscoverPage() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gray-200 dark:bg-gray-800">
-                        <span className="material-symbols-outlined text-4xl text-text-sub-light dark:text-text-sub-dark">
+                        <span className="material-symbols-outlined text-2xl text-text-sub-light dark:text-text-sub-dark">
                           image
                         </span>
                       </div>
                     )}
                     {manga.status && (
-                      <div className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-black">
+                      <div className="absolute left-1.5 top-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-black">
                         {manga.status}
                       </div>
                     )}
                   </div>
-                  <div>
-                    <p className="line-clamp-1 text-base font-bold leading-tight">
+                  <div className="px-0.5">
+                    <p className="line-clamp-2 text-sm font-bold leading-tight">
                       {manga.title}
                     </p>
-                    <p className="mt-1 text-xs font-medium leading-normal text-text-sub-light dark:text-text-sub-dark">
+                    <p className="mt-0.5 text-[10px] font-medium leading-normal text-text-sub-light dark:text-text-sub-dark line-clamp-1">
                       {manga.author || "Unknown Author"}
                     </p>
-                    {manga.genres && manga.genres.length > 0 && (
-                      <p className="mt-1 text-xs text-text-sub-light dark:text-text-sub-dark">
-                        {manga.genres.slice(0, 2).join(", ")}
-                      </p>
-                    )}
                   </div>
                 </div>
               ))}

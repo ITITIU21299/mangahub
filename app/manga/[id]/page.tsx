@@ -469,16 +469,33 @@ export default function MangaDetailsPage() {
                 <label className="mb-1 block text-sm font-medium">
                   Current Chapter
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  max={manga.total_chapters || 9999}
+                <select
                   value={currentChapter}
                   onChange={(e) =>
                     setCurrentChapter(parseInt(e.target.value) || 0)
                   }
                   className="w-full rounded-lg border-2 border-gray-200 bg-background-light px-4 py-2 dark:border-gray-700 dark:bg-background-dark"
-                />
+                >
+                  {(() => {
+                    const totalChapters = manga.total_chapters || 0;
+                    const maxChapters =
+                      totalChapters > 0 ? totalChapters : 1000;
+
+                    // Generate chapter options from 0 to latest chapter
+                    return Array.from(
+                      { length: Math.min(maxChapters + 1, 1001) },
+                      (_, i) => i
+                    ).map((chapter) => (
+                      <option key={chapter} value={chapter}>
+                        Chapter {chapter}
+                        {chapter === 0 ? " (Not Started)" : ""}
+                        {chapter === totalChapters && totalChapters > 0
+                          ? " (Latest)"
+                          : ""}
+                      </option>
+                    ));
+                  })()}
+                </select>
               </div>
             </div>
 
@@ -556,16 +573,33 @@ export default function MangaDetailsPage() {
                 <label className="mb-1 block text-sm font-medium">
                   Current Chapter
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  max={manga.total_chapters || 9999}
+                <select
                   value={currentChapter}
                   onChange={(e) =>
                     setCurrentChapter(parseInt(e.target.value) || 0)
                   }
                   className="w-full rounded-lg border-2 border-gray-200 bg-background-light px-4 py-2 dark:border-gray-700 dark:bg-background-dark"
-                />
+                >
+                  {(() => {
+                    const totalChapters = manga.total_chapters || 0;
+                    const maxChapters =
+                      totalChapters > 0 ? totalChapters : 1000;
+
+                    // Generate chapter options from 0 to latest chapter
+                    return Array.from(
+                      { length: Math.min(maxChapters + 1, 1001) },
+                      (_, i) => i
+                    ).map((chapter) => (
+                      <option key={chapter} value={chapter}>
+                        Chapter {chapter}
+                        {chapter === 0 ? " (Not Started)" : ""}
+                        {chapter === totalChapters && totalChapters > 0
+                          ? " (Latest)"
+                          : ""}
+                      </option>
+                    ));
+                  })()}
+                </select>
               </div>
             </div>
 

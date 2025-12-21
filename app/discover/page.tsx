@@ -40,6 +40,12 @@ export default function DiscoverPage() {
   const [mangas, setMangas] = useState<Manga[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [genres, setGenres] = useState<string[]>(["All"]); // Start with "All"
+  const [genresLoading, setGenresLoading] = useState(true);
+  const [showAllGenres, setShowAllGenres] = useState(false);
+
+  // Popular genres to show by default (first 10 after "All")
+  const POPULAR_GENRES_COUNT = 10;
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 20,
@@ -47,17 +53,74 @@ export default function DiscoverPage() {
     total_pages: 0,
   });
 
-  const genres = [
-    "All",
-    "Action",
-    "Romance",
-    "Fantasy",
-    "Comedy",
-    "Drama",
-    "Horror",
-    "Sci-Fi",
-  ];
   const statuses = ["All", "Ongoing", "Completed", "Hiatus"];
+
+  // Fetch genres from MangaDex API on component mount
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        const res = await fetch(`${MANGADEX_API}/tags`);
+        if (res.ok) {
+          const data = await res.json();
+          if (
+            data.genres &&
+            Array.isArray(data.genres) &&
+            data.genres.length > 0
+          ) {
+            // Add "All" at the beginning and sort alphabetically
+            const sortedGenres = [...data.genres].sort((a, b) =>
+              a.localeCompare(b, undefined, { sensitivity: "base" })
+            );
+            setGenres(["All", ...sortedGenres]);
+          } else {
+            // Fallback to default genres if no genres returned
+            console.warn("No genres returned from API, using defaults");
+            setGenres([
+              "All",
+              "Action",
+              "Romance",
+              "Fantasy",
+              "Comedy",
+              "Drama",
+              "Horror",
+              "Sci-Fi",
+            ]);
+          }
+        } else {
+          // Fallback to default genres if API fails
+          console.warn("Failed to fetch genres, using defaults");
+          setGenres([
+            "All",
+            "Action",
+            "Romance",
+            "Fantasy",
+            "Comedy",
+            "Drama",
+            "Horror",
+            "Sci-Fi",
+          ]);
+        }
+      } catch (err) {
+        console.error("Error fetching genres:", err);
+        // Fallback to default genres on error
+        setGenres([
+          "All",
+          "Action",
+          "Romance",
+          "Fantasy",
+          "Comedy",
+          "Drama",
+          "Horror",
+          "Sci-Fi",
+        ]);
+      } finally {
+        setGenresLoading(false);
+      }
+    };
+
+    fetchGenres();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchManga = async (page: number = 1) => {
     setLoading(true);
@@ -295,67 +358,97 @@ export default function DiscoverPage() {
       </div>
 
       {/* Filter Chips */}
-      <div className="no-scrollbar flex w-full gap-3 overflow-x-auto px-6 py-4">
-        <button
-          onClick={() => handleGenreClick("All")}
-          className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 transition-transform active:scale-95 ${
-            !selectedGenre
-              ? "bg-primary"
-              : "bg-surface-light ring-1 ring-black/5 dark:bg-surface-dark dark:ring-white/10"
-          }`}
-        >
-          <span
-            className={`text-sm font-bold leading-normal ${
+      <div className="px-6 py-4">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => handleGenreClick("All")}
+            className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 transition-transform active:scale-95 ${
               !selectedGenre
-                ? "text-black"
-                : "text-text-main-light dark:text-text-main-dark"
-            }`}
-          >
-            All
-          </span>
-        </button>
-        {genres.slice(1).map((genre) => (
-          <button
-            key={genre}
-            onClick={() => handleGenreClick(genre)}
-            className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:ring-white/10 ${
-              selectedGenre === genre
                 ? "bg-primary"
-                : "bg-surface-light dark:bg-surface-dark"
+                : "bg-surface-light ring-1 ring-black/5 dark:bg-surface-dark dark:ring-white/10"
             }`}
           >
             <span
-              className={`text-sm font-medium leading-normal ${
-                selectedGenre === genre
-                  ? "font-bold text-black"
+              className={`text-sm font-bold leading-normal ${
+                !selectedGenre
+                  ? "text-black"
                   : "text-text-main-light dark:text-text-main-dark"
               }`}
             >
-              {genre}
+              All
             </span>
           </button>
-        ))}
-        {statuses.slice(1).map((status) => (
-          <button
-            key={status}
-            onClick={() => handleStatusClick(status)}
-            className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:ring-white/10 ${
-              selectedStatus === status
-                ? "bg-primary"
-                : "bg-surface-light dark:bg-surface-dark"
-            }`}
-          >
-            <span
-              className={`text-sm font-medium leading-normal ${
+          {genresLoading ? (
+            <div className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-light px-6 ring-1 ring-black/5 dark:bg-surface-dark dark:ring-white/10">
+              <span className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                Loading genres...
+              </span>
+            </div>
+          ) : (
+            <>
+              {(showAllGenres
+                ? genres.slice(1)
+                : genres.slice(1, POPULAR_GENRES_COUNT + 1)
+              ).map((genre) => (
+                <button
+                  key={genre}
+                  onClick={() => handleGenreClick(genre)}
+                  className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:ring-white/10 ${
+                    selectedGenre === genre
+                      ? "bg-primary"
+                      : "bg-surface-light dark:bg-surface-dark"
+                  }`}
+                >
+                  <span
+                    className={`text-sm font-medium leading-normal ${
+                      selectedGenre === genre
+                        ? "font-bold text-black"
+                        : "text-text-main-light dark:text-text-main-dark"
+                    }`}
+                  >
+                    {genre}
+                  </span>
+                </button>
+              ))}
+              {genres.length > POPULAR_GENRES_COUNT + 1 && (
+                <button
+                  onClick={() => setShowAllGenres(!showAllGenres)}
+                  className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-surface-light px-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:bg-surface-dark dark:ring-white/10"
+                >
+                  <span className="material-symbols-outlined text-sm text-text-main-light dark:text-text-main-dark">
+                    {showAllGenres ? "expand_less" : "expand_more"}
+                  </span>
+                  <span className="text-sm font-medium text-text-main-light dark:text-text-main-dark">
+                    {showAllGenres
+                      ? "Show Less"
+                      : `+${genres.length - POPULAR_GENRES_COUNT - 1} More`}
+                  </span>
+                </button>
+              )}
+            </>
+          )}
+          {statuses.slice(1).map((status) => (
+            <button
+              key={status}
+              onClick={() => handleStatusClick(status)}
+              className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full pl-6 pr-6 ring-1 ring-black/5 transition-transform active:scale-95 dark:ring-white/10 ${
                 selectedStatus === status
-                  ? "font-bold text-black"
-                  : "text-text-main-light dark:text-text-main-dark"
+                  ? "bg-primary"
+                  : "bg-surface-light dark:bg-surface-dark"
               }`}
             >
-              {status}
-            </span>
-          </button>
-        ))}
+              <span
+                className={`text-sm font-medium leading-normal ${
+                  selectedStatus === status
+                    ? "font-bold text-black"
+                    : "text-text-main-light dark:text-text-main-dark"
+                }`}
+              >
+                {status}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Results Grid */}

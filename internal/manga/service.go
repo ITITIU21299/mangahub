@@ -140,6 +140,46 @@ func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
 	return &m, nil
 }
 
+// MangaWithProgress combines manga details with user progress.
+type MangaWithProgress struct {
+	Manga        *models.Manga
+	UserProgress *models.UserProgress `json:"user_progress"`
+}
+
+// GetMangaByIDWithProgress retrieves a single manga by ID and includes user progress if userID is provided.
+func (s *Service) GetMangaByIDWithProgress(mangaID, userID string) (*MangaWithProgress, error) {
+	manga, err := s.GetMangaByID(mangaID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &MangaWithProgress{
+		Manga:        manga,
+		UserProgress: nil,
+	}
+
+	// If userID is provided, fetch user progress
+	if userID != "" {
+		var progress models.UserProgress
+		err := s.DB.QueryRow(
+			`SELECT user_id, manga_id, current_chapter, status, updated_at 
+			FROM user_progress 
+			WHERE user_id = ? AND manga_id = ?`,
+			userID, mangaID,
+		).Scan(&progress.UserID, &progress.MangaID, &progress.CurrentChapter, &progress.Status, &progress.UpdatedAt)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				log.Printf("Error querying user progress: %v", err)
+			}
+			// User progress not found is OK, just leave it as nil
+		} else {
+			result.UserProgress = &progress
+		}
+	}
+
+	return result, nil
+}
+
 // parseGenres parses JSON genres string, with fallback for comma-separated values.
 func parseGenres(genresJSON string) []string {
 	if genresJSON == "" {

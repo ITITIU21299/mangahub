@@ -62,10 +62,12 @@ func (h *Handler) HandleListManga(c *gin.Context) {
 	})
 }
 
-// HandleGetManga retrieves a single manga by ID.
+// HandleGetManga retrieves a single manga by ID, optionally including user progress if logged in.
 func (h *Handler) HandleGetManga(c *gin.Context) {
 	id := c.Param("id")
-	manga, err := h.Service.GetMangaByID(id)
+	userID := c.GetString("user_id") // Will be empty if not authenticated
+
+	result, err := h.Service.GetMangaByIDWithProgress(id, userID)
 	if err != nil {
 		if err.Error() == "not_found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
@@ -75,6 +77,19 @@ func (h *Handler) HandleGetManga(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, manga)
+	// Return manga with optional user progress
+	response := gin.H{
+		"id":             result.Manga.ID,
+		"title":          result.Manga.Title,
+		"author":         result.Manga.Author,
+		"genres":         result.Manga.Genres,
+		"status":         result.Manga.Status,
+		"total_chapters": result.Manga.TotalChapters,
+		"description":    result.Manga.Description,
+		"cover_url":      result.Manga.CoverURL,
+		"user_progress":  result.UserProgress,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 

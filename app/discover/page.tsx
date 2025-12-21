@@ -3,7 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+// Use Next.js API route that proxies to MangaDex
+const API_BASE = "/api/mangadex";
 
 interface Manga {
   id: string;
@@ -14,6 +15,7 @@ interface Manga {
   total_chapters: number;
   description: string;
   cover_url: string;
+  mangadex_id?: string;
 }
 
 interface Pagination {
@@ -60,15 +62,9 @@ export default function DiscoverPage() {
     setError(null);
 
     try {
-      const token = localStorage.getItem("mangahub_token");
-      if (!token) {
-        router.push("/auth/signin");
-        return;
-      }
-
       const params = new URLSearchParams();
       if (searchQuery.trim()) {
-        params.append("q", searchQuery.trim());
+        params.append("title", searchQuery.trim());
       }
       if (selectedGenre && selectedGenre !== "All") {
         params.append("genre", selectedGenre);
@@ -76,24 +72,16 @@ export default function DiscoverPage() {
       if (selectedStatus && selectedStatus !== "All") {
         params.append("status", selectedStatus);
       }
-      params.append("page", page.toString());
-      params.append("limit", "20");
+      const limit = 20;
+      const offset = (page - 1) * limit;
+      params.append("limit", limit.toString());
+      params.append("offset", offset.toString());
 
-      const res = await fetch(`${API_BASE}/manga?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (res.status === 401) {
-        localStorage.removeItem("mangahub_token");
-        router.push("/auth/signin");
-        return;
-      }
+      const res = await fetch(`${API_BASE}/search?${params.toString()}`);
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to load manga");
+        setError(data.error || "Failed to load manga from MangaDex");
         setMangas([]);
         return;
       }
@@ -102,16 +90,23 @@ export default function DiscoverPage() {
       setMangas(data.data || []);
       setPagination(data.pagination || pagination);
     } catch (err) {
-      setError("Unable to reach server. Please try again.");
+      console.error("Error fetching manga:", err);
+      setError("Unable to fetch manga. Please try again.");
       setMangas([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Debounced search effect - handles both search query and filters
   useEffect(() => {
-    fetchManga(1);
-  }, [selectedGenre, selectedStatus]);
+    const timeoutId = setTimeout(() => {
+      fetchManga(1);
+    }, searchQuery.trim() ? 500 : 0); // Debounce only when typing, immediate for filters
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedGenre, selectedStatus]);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -291,11 +286,19 @@ export default function DiscoverPage() {
             <h3 className="mb-4 flex items-center gap-2 text-xl font-bold">
               {searchQuery || selectedGenre || selectedStatus
                 ? "Search Results"
-                : "All Manga"}
+                : "Trending Now"}
               {pagination.total > 0 && (
                 <span className="text-sm font-normal text-text-sub-light dark:text-text-sub-dark">
                   ({pagination.total}{" "}
                   {pagination.total === 1 ? "result" : "results"})
+                </span>
+              )}
+              {!searchQuery && !selectedGenre && !selectedStatus && (
+                <span
+                  className="material-symbols-outlined text-primary"
+                  style={{ fontVariationSettings: '"FILL" 1' }}
+                >
+                  local_fire_department
                 </span>
               )}
             </h3>

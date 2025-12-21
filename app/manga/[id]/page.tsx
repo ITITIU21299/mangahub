@@ -47,6 +47,7 @@ export default function MangaDetailsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [canRetry, setCanRetry] = useState(false);
 
   const statusOptions = ["Reading", "Completed", "Plan to Read", "Dropped"];
 
@@ -105,11 +106,18 @@ export default function MangaDetailsPage() {
         // Fetch user progress from local API if logged in
         if (token) {
           try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
             const progressRes = await fetch(`${LOCAL_API_BASE}/users/library`, {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
+              signal: controller.signal,
             });
+
+            clearTimeout(timeoutId);
+
             if (progressRes.ok) {
               const library: UserProgress[] | null = await progressRes
                 .json()
@@ -120,7 +128,20 @@ export default function MangaDetailsPage() {
               }
             }
           } catch (err) {
-            console.error("Failed to fetch user progress:", err);
+            // Silently fail if API server is not available
+            // This is expected if Go API server is not running
+            // Only log if it's not a network/abort error
+            if (err instanceof Error) {
+              const isNetworkError =
+                err.name === "AbortError" ||
+                err.message.includes("Failed to fetch") ||
+                err.message.includes("NetworkError") ||
+                err.message.includes("ECONNREFUSED");
+
+              if (!isNetworkError) {
+                console.warn("Failed to fetch user progress:", err.message);
+              }
+            }
           }
         }
       }
@@ -149,6 +170,7 @@ export default function MangaDetailsPage() {
     setActionLoading(true);
     setActionError(null);
     setSuccessMessage(null);
+    setCanRetry(false);
 
     try {
       const token = localStorage.getItem("mangahub_token");
@@ -173,18 +195,38 @@ export default function MangaDetailsPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        // UC-005 Alternative Flow A2: Database error - show retry option
+        const isRetryable =
+          data.retry === true || data.type === "database_error";
         setActionError(data.error || "Failed to add to library");
+        setCanRetry(isRetryable);
         return;
       }
 
-      setSuccessMessage("Added to library successfully!");
-      setShowAddModal(false);
-      // Refresh manga details to get updated progress
+      // UC-005 Main Success Scenario: Confirm addition
+      // UC-005 Alternative Flow A1: Handle already_exists status
+      if (data.status === "already_exists") {
+        setSuccessMessage(
+          data.message ||
+            "Manga already in library. Progress updated successfully!"
+        );
+      } else {
+        setSuccessMessage(data.message || "Added to library successfully!");
+      }
+
+      // Close modal and refresh UI
       setTimeout(() => {
-        fetchMangaDetails();
-      }, 500);
+        setShowAddModal(false);
+        setActionError(null);
+        setSuccessMessage(null);
+        fetchMangaDetails(); // Update UI with new progress
+      }, 1500);
     } catch (err) {
-      setActionError("Unable to add to library. Please try again.");
+      // UC-005 Alternative Flow A2: Network error - show retry option
+      setActionError(
+        "Network error. Please check your connection and try again."
+      );
+      setCanRetry(true);
     } finally {
       setActionLoading(false);
     }
@@ -196,6 +238,7 @@ export default function MangaDetailsPage() {
     setActionLoading(true);
     setActionError(null);
     setSuccessMessage(null);
+    setCanRetry(false);
 
     try {
       const token = localStorage.getItem("mangahub_token");
@@ -220,18 +263,25 @@ export default function MangaDetailsPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        const isRetryable =
+          data.retry === true || data.type === "database_error";
         setActionError(data.error || "Failed to update progress");
+        setCanRetry(isRetryable);
         return;
       }
 
       setSuccessMessage("Progress updated successfully!");
-      setShowUpdateModal(false);
-      // Refresh manga details to get updated progress
       setTimeout(() => {
+        setShowUpdateModal(false);
+        setActionError(null);
+        setSuccessMessage(null);
         fetchMangaDetails();
-      }, 500);
+      }, 1500);
     } catch (err) {
-      setActionError("Unable to update progress. Please try again.");
+      setActionError(
+        "Network error. Please check your connection and try again."
+      );
+      setCanRetry(true);
     } finally {
       setActionLoading(false);
     }
@@ -433,9 +483,9 @@ export default function MangaDetailsPage() {
             </div>
 
             {actionError && (
-              <p className="mb-3 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-800 dark:bg-red-900/40 dark:text-red-200">
-                {actionError}
-              </p>
+              <div className="mb-3 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-800 dark:bg-red-900/40 dark:text-red-200">
+                <p>{actionError}</p>
+              </div>
             )}
 
             {successMessage && (
@@ -450,18 +500,31 @@ export default function MangaDetailsPage() {
                   setShowAddModal(false);
                   setActionError(null);
                   setSuccessMessage(null);
+                  setCanRetry(false);
                 }}
                 className="flex-1 rounded-full border-2 border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddToLibrary}
                 disabled={actionLoading}
-                className="flex-1 rounded-full bg-primary px-4 py-2 text-sm font-bold text-black shadow-sm transition-all disabled:opacity-50"
               >
-                {actionLoading ? "Adding..." : "Add"}
+                {successMessage ? "Close" : "Cancel"}
               </button>
+              {/* UC-005 Alternative Flow A2: Retry button for database errors */}
+              {canRetry && actionError ? (
+                <button
+                  onClick={handleAddToLibrary}
+                  disabled={actionLoading}
+                  className="flex-1 rounded-full bg-orange-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {actionLoading ? "Retrying..." : "Retry"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleAddToLibrary}
+                  disabled={actionLoading || !!successMessage}
+                  className="flex-1 rounded-full bg-primary px-4 py-2 text-sm font-bold text-black shadow-sm transition-all disabled:opacity-50"
+                >
+                  {actionLoading ? "Adding..." : "Add"}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -507,9 +570,9 @@ export default function MangaDetailsPage() {
             </div>
 
             {actionError && (
-              <p className="mb-3 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-800 dark:bg-red-900/40 dark:text-red-200">
-                {actionError}
-              </p>
+              <div className="mb-3 rounded-lg bg-red-100 px-3 py-2 text-sm text-red-800 dark:bg-red-900/40 dark:text-red-200">
+                <p>{actionError}</p>
+              </div>
             )}
 
             {successMessage && (
@@ -524,18 +587,30 @@ export default function MangaDetailsPage() {
                   setShowUpdateModal(false);
                   setActionError(null);
                   setSuccessMessage(null);
+                  setCanRetry(false);
                 }}
                 className="flex-1 rounded-full border-2 border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateProgress}
                 disabled={actionLoading}
-                className="flex-1 rounded-full bg-primary px-4 py-2 text-sm font-bold text-black shadow-sm transition-all disabled:opacity-50"
               >
-                {actionLoading ? "Updating..." : "Update"}
+                {successMessage ? "Close" : "Cancel"}
               </button>
+              {canRetry && actionError ? (
+                <button
+                  onClick={handleUpdateProgress}
+                  disabled={actionLoading}
+                  className="flex-1 rounded-full bg-orange-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {actionLoading ? "Retrying..." : "Retry"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleUpdateProgress}
+                  disabled={actionLoading || !!successMessage}
+                  className="flex-1 rounded-full bg-primary px-4 py-2 text-sm font-bold text-black shadow-sm transition-all disabled:opacity-50"
+                >
+                  {actionLoading ? "Updating..." : "Update"}
+                </button>
+              )}
             </div>
           </div>
         </div>

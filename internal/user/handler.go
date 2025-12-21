@@ -46,18 +46,39 @@ func (h *Handler) HandleAddToLibrary(c *gin.Context) {
 		Status:         req.Status,
 	}
 
-	err := h.Service.AddToLibrary(userID, addReq)
+	result, err := h.Service.AddToLibrary(userID, addReq)
 	if err != nil {
-		switch err.Error() {
-		case "manga_not_found":
-			c.JSON(http.StatusNotFound, gin.H{"error": "manga not found"})
-		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save library entry"})
+		// UC-005 Alternative Flow A2: Database error - show retry option
+		errorMsg := err.Error()
+		if errorMsg == "database_error: failed to check library entry" || 
+		   errorMsg == "database_error: failed to save library entry" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Database error. Please try again.",
+				"type":  "database_error",
+				"retry": true,
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to add to library. Please try again.",
+				"type":  "unknown_error",
+				"retry": true,
+			})
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "saved"})
+	// UC-005 Main Success Scenario: Confirm addition and return status
+	response := gin.H{
+		"message": "Manga added to library successfully",
+		"status":  result.Status,
+	}
+	
+	// UC-005 Alternative Flow A1: Manga already in library
+	if result.Status == "already_exists" {
+		response["message"] = "Manga already in library. Progress updated successfully!"
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // HandleGetLibrary retrieves user's library.
@@ -94,4 +115,3 @@ func (h *Handler) HandleUpdateProgress(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "updated"})
 }
-

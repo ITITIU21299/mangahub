@@ -24,19 +24,27 @@ type AddToLibraryRequest struct {
 	Status         string
 }
 
-// AddToLibrary adds a manga to user's library or updates if it exists.
-func (s *Service) AddToLibrary(userID string, req AddToLibraryRequest) error {
-	// Validate manga exists
-	var exists bool
-	err := s.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM manga WHERE id = ?)", req.MangaID).Scan(&exists)
+// AddToLibraryResult represents the result of adding manga to library (UC-005).
+type AddToLibraryResult struct {
+	Status string // "newly_added" or "already_exists"
+}
+
+// AddToLibrary adds a manga to user's library or updates if it exists (UC-005).
+// Returns AddToLibraryResult indicating whether manga was newly added or already existed.
+func (s *Service) AddToLibrary(userID string, req AddToLibraryRequest) (*AddToLibraryResult, error) {
+	// UC-005 Alternative Flow A1: Check if manga already exists in user's library
+	var alreadyInLibrary bool
+	err := s.DB.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM user_progress WHERE user_id = ? AND manga_id = ?)",
+		userID, req.MangaID,
+	).Scan(&alreadyInLibrary)
 	if err != nil {
-		log.Printf("Error checking manga existence: %v", err)
-		return errors.New("failed to validate manga")
-	}
-	if !exists {
-		return errors.New("manga_not_found")
+		log.Printf("Error checking library entry: %v", err)
+		return nil, errors.New("database_error: failed to check library entry")
 	}
 
+	// UC-005 Main Success Scenario: Create user_progress record
+	// Works for any manga_id (local DB manga or MangaDex manga)
 	_, err = s.DB.Exec(
 		`INSERT INTO user_progress (user_id, manga_id, current_chapter, status) 
 		 VALUES (?, ?, ?, ?)
@@ -48,9 +56,18 @@ func (s *Service) AddToLibrary(userID string, req AddToLibraryRequest) error {
 	)
 	if err != nil {
 		log.Printf("Error adding to library: %v", err)
-		return errors.New("failed to save library entry")
+		return nil, errors.New("database_error: failed to save library entry")
 	}
-	return nil
+
+	// Return status for UC-005
+	result := &AddToLibraryResult{}
+	if alreadyInLibrary {
+		result.Status = "already_exists"
+	} else {
+		result.Status = "newly_added"
+	}
+
+	return result, nil
 }
 
 // GetLibrary retrieves all manga in user's library.
@@ -104,4 +121,3 @@ func (s *Service) UpdateProgress(userID string, req UpdateProgressRequest) error
 	}
 	return nil
 }
-

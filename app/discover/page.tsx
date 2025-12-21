@@ -3,8 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Use Next.js API route that proxies to MangaDex
-const API_BASE = "/api/mangadex";
+// Use Next.js API route that proxies to MangaDex, with fallback to local API
+const MANGADEX_API = "/api/mangadex";
+const LOCAL_API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 interface Manga {
   id: string;
@@ -77,21 +79,123 @@ export default function DiscoverPage() {
       params.append("limit", limit.toString());
       params.append("offset", offset.toString());
 
-      const res = await fetch(`${API_BASE}/search?${params.toString()}`);
+      // Try MangaDex API first
+      let res = await fetch(`${MANGADEX_API}/search?${params.toString()}`);
 
+      // If MangaDex fails, fallback to local API
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to load manga from MangaDex");
-        setMangas([]);
-        return;
+        const errorData = await res.json().catch(() => ({}));
+        const isNetworkError =
+          res.status === 500 &&
+          (errorData.error?.includes("Unable to connect") ||
+            errorData.error?.includes("ECONNREFUSED") ||
+            errorData.error?.includes("fetch failed"));
+
+        if (isNetworkError) {
+          console.log(
+            "[Discover] MangaDex unavailable, falling back to local API"
+          );
+
+          // Fallback to local Go API
+          const token = localStorage.getItem("mangahub_token");
+          if (!token) {
+            setError("Please sign in to access manga library");
+            setMangas([]);
+            return;
+          }
+
+          // Build params for local API (different format)
+          const localParams = new URLSearchParams();
+          if (searchQuery.trim()) {
+            localParams.append("q", searchQuery.trim());
+          }
+          if (selectedGenre && selectedGenre !== "All") {
+            localParams.append("genre", selectedGenre);
+          }
+          if (selectedStatus && selectedStatus !== "All") {
+            localParams.append("status", selectedStatus);
+          }
+          localParams.append("page", page.toString());
+          localParams.append("limit", limit.toString());
+
+          res = await fetch(
+            `${LOCAL_API_BASE}/manga?${localParams.toString()}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (!res.ok) {
+            const localError = await res.json().catch(() => ({}));
+            setError(localError.error || "Failed to load manga");
+            setMangas([]);
+            return;
+          }
+
+          const localData: SearchResponse = await res.json();
+          setMangas(localData.data || []);
+          setPagination(localData.pagination || pagination);
+          return;
+        } else {
+          // MangaDex returned an error but it's not a network issue
+          setError(errorData.error || "Failed to load manga from MangaDex");
+          setMangas([]);
+          return;
+        }
       }
 
+      // MangaDex succeeded
       const data: SearchResponse = await res.json();
       setMangas(data.data || []);
       setPagination(data.pagination || pagination);
     } catch (err) {
       console.error("Error fetching manga:", err);
-      setError("Unable to fetch manga. Please try again.");
+
+      // Try fallback to local API on any error
+      try {
+        const token = localStorage.getItem("mangahub_token");
+        if (token) {
+          console.log(
+            "[Discover] Error with MangaDex, trying local API fallback"
+          );
+          const localParams = new URLSearchParams();
+          if (searchQuery.trim()) {
+            localParams.append("q", searchQuery.trim());
+          }
+          if (selectedGenre && selectedGenre !== "All") {
+            localParams.append("genre", selectedGenre);
+          }
+          if (selectedStatus && selectedStatus !== "All") {
+            localParams.append("status", selectedStatus);
+          }
+          localParams.append("page", page.toString());
+          localParams.append("limit", "20");
+
+          const localRes = await fetch(
+            `${LOCAL_API_BASE}/manga?${localParams.toString()}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (localRes.ok) {
+            const localData: SearchResponse = await localRes.json();
+            setMangas(localData.data || []);
+            setPagination(localData.pagination || pagination);
+            return;
+          }
+        }
+      } catch (fallbackErr) {
+        console.error("Fallback also failed:", fallbackErr);
+      }
+
+      setError(
+        "Unable to fetch manga. Please check your connection and try again."
+      );
       setMangas([]);
     } finally {
       setLoading(false);
@@ -100,9 +204,12 @@ export default function DiscoverPage() {
 
   // Debounced search effect - handles both search query and filters
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchManga(1);
-    }, searchQuery.trim() ? 500 : 0); // Debounce only when typing, immediate for filters
+    const timeoutId = setTimeout(
+      () => {
+        fetchManga(1);
+      },
+      searchQuery.trim() ? 500 : 0
+    ); // Debounce only when typing, immediate for filters
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps

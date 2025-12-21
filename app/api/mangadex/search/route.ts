@@ -37,7 +37,7 @@ interface MangaDexResponse {
 let lastRequestTime = 0;
 const MIN_DELAY_MS = 200;
 
-async function rateLimitedFetch(url: string) {
+async function rateLimitedFetch(url: string, retries = 3) {
   const now = Date.now();
   const timeSinceLastRequest = now - lastRequestTime;
   if (timeSinceLastRequest < MIN_DELAY_MS) {
@@ -47,20 +47,85 @@ async function rateLimitedFetch(url: string) {
   }
   lastRequestTime = Date.now();
 
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": "MangaHub/1.0 (Net Centric Project)",
-    },
-  });
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error("Rate limit exceeded. Please try again later.");
+      // Log the URL being fetched for debugging
+      console.log(`[MangaDex] Fetching: ${url}`);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "User-Agent": "MangaHub/1.0 (Net Centric Project)",
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+        // Next.js fetch configuration
+        cache: "no-store",
+      });
+
+      console.log(`[MangaDex] Response status: ${response.status}`);
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("Rate limit exceeded. Please try again later.");
+        }
+        throw new Error(`MangaDex API error: ${response.statusText}`);
+      }
+
+      return response.json();
+    } catch (error: unknown) {
+      const isLastAttempt = attempt === retries;
+
+      // Log error details for debugging
+      console.error(`[MangaDex] Attempt ${attempt}/${retries} failed:`, error);
+
+      // Check for abort signal (timeout)
+      if (error instanceof Error && error.name === "AbortError") {
+        if (isLastAttempt) {
+          throw new Error("Request timed out. Please try again.");
+        }
+        // Retry on timeout
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+        continue;
+      }
+
+      // Check for network errors (including ECONNREFUSED)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const errorCode = (error as any)?.code;
+
+      const isNetworkError =
+        error instanceof TypeError ||
+        errorCode === "ECONNREFUSED" ||
+        errorCode === "ENOTFOUND" ||
+        errorCode === "ETIMEDOUT" ||
+        (error instanceof Error &&
+          (errorMessage.includes("fetch failed") ||
+            errorMessage.includes("ECONNREFUSED") ||
+            errorMessage.includes("network") ||
+            errorMessage.includes("ENOTFOUND") ||
+            errorMessage.includes("ETIMEDOUT")));
+
+      if (isLastAttempt) {
+        if (isNetworkError) {
+          throw new Error(
+            "Unable to connect to MangaDex API. Please check your internet connection and try again."
+          );
+        }
+        throw error;
+      }
+
+      // Wait before retrying (exponential backoff)
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
-    throw new Error(`MangaDex API error: ${response.statusText}`);
   }
 
-  return response.json();
+  throw new Error("Failed to fetch from MangaDex API after multiple attempts");
 }
 
 function transformMangaDexToManga(mangaItem: MangaDexManga): {
@@ -337,12 +402,29 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("MangaDex API error:", error);
+
+    // Provide more helpful error messages
+    let errorMessage = "Failed to fetch manga from MangaDex";
+    if (error instanceof Error) {
+      if (
+        error.message.includes("ECONNREFUSED") ||
+        error.message.includes("fetch failed")
+      ) {
+        errorMessage =
+          "Unable to connect to MangaDex API. Please check your internet connection.";
+      } else if (
+        error.message.includes("timeout") ||
+        error.message.includes("aborted")
+      ) {
+        errorMessage = "Request timed out. Please try again.";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch manga from MangaDex",
+        error: errorMessage,
         data: [],
         pagination: {
           page: 1,

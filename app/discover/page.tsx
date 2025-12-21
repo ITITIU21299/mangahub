@@ -129,7 +129,7 @@ export default function DiscoverPage() {
     try {
       const params = new URLSearchParams();
       if (searchQuery.trim()) {
-        params.append("title", searchQuery.trim());
+        params.append("query", searchQuery.trim()); // Changed to "query" to support both title and author
       }
       if (selectedGenre && selectedGenre !== "All") {
         params.append("genre", selectedGenre);

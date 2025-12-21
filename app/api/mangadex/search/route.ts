@@ -217,10 +217,44 @@ function transformMangaDexToManga(mangaItem: MangaDexManga): {
   };
 }
 
+interface MangaDexAuthor {
+  id: string;
+  type: string;
+  attributes: {
+    name: string;
+  };
+}
+
+interface MangaDexAuthorResponse {
+  result: string;
+  response: string;
+  data: MangaDexAuthor[];
+  total?: number;
+}
+
+async function searchAuthorsByName(name: string): Promise<string[]> {
+  try {
+    const params = new URLSearchParams();
+    params.append("name", name.trim());
+    params.append("limit", "10"); // Limit to 10 authors max
+    
+    const url = `${MANGADEX_BASE}/author?${params.toString()}`;
+    const data = (await rateLimitedFetch(url)) as MangaDexAuthorResponse;
+    
+    if (data && data.data && Array.isArray(data.data)) {
+      return data.data.map((author) => author.id);
+    }
+    return [];
+  } catch (error) {
+    console.warn("Failed to search authors:", error);
+    return [];
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const title = searchParams.get("title") || "";
+    const query = searchParams.get("query") || searchParams.get("title") || ""; // Support both "query" and "title" for backward compatibility
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
     const genre = searchParams.get("genre");
@@ -249,8 +283,8 @@ export async function GET(request: NextRequest) {
       ) {
         // Build MangaDex query for this batch
         const params = new URLSearchParams();
-        if (title.trim()) {
-          params.append("title", title.trim());
+        if (query.trim()) {
+          params.append("title", query.trim());
         }
         params.append("limit", batchSize.toString());
         params.append("offset", currentOffset.toString());
@@ -346,58 +380,148 @@ export async function GET(request: NextRequest) {
     }
 
     // No genre filter - use simple pagination
-    const params = new URLSearchParams();
-    if (title.trim()) {
-      params.append("title", title.trim());
-    }
-    params.append("limit", Math.min(limit, 100).toString());
-    params.append("offset", offset.toString());
-    params.append("includes[]", "cover_art");
-    params.append("includes[]", "author");
-    params.append("includes[]", "artist");
+    let allMangas: ReturnType<typeof transformMangaDexToManga>[] = [];
+    let totalResults = 0;
 
-    // Add content rating filter (safe for all audiences)
-    params.append("contentRating[]", "safe");
-    params.append("contentRating[]", "suggestive");
-    params.append("contentRating[]", "erotica");
+    // If there's a search query, search by both title and author
+    if (query.trim()) {
+      // Search by title
+      const titleParams = new URLSearchParams();
+      titleParams.append("title", query.trim());
+      titleParams.append("limit", Math.min(limit * 2, 100).toString()); // Fetch more to account for deduplication
+      titleParams.append("offset", offset.toString());
+      titleParams.append("includes[]", "cover_art");
+      titleParams.append("includes[]", "author");
+      titleParams.append("includes[]", "artist");
+      titleParams.append("contentRating[]", "safe");
+      titleParams.append("contentRating[]", "suggestive");
+      titleParams.append("contentRating[]", "erotica");
 
-    // Add status filter if provided
-    if (status && status !== "All") {
-      const statusMap: Record<string, string> = {
-        Ongoing: "ongoing",
-        Completed: "completed",
-        Hiatus: "hiatus",
-      };
-      if (statusMap[status]) {
-        params.append("status[]", statusMap[status]);
+      if (status && status !== "All") {
+        const statusMap: Record<string, string> = {
+          Ongoing: "ongoing",
+          Completed: "completed",
+          Hiatus: "hiatus",
+        };
+        if (statusMap[status]) {
+          titleParams.append("status[]", statusMap[status]);
+        }
+      }
+
+      const titleUrl = `${MANGADEX_BASE}/manga?${titleParams.toString()}`;
+      const titleData = (await rateLimitedFetch(titleUrl)) as MangaDexResponse;
+
+      if (titleData && titleData.data && Array.isArray(titleData.data)) {
+        const titleMangas = titleData.data
+          .map(transformMangaDexToManga)
+          .filter((m): m is NonNullable<typeof m> => m !== null);
+        allMangas.push(...titleMangas);
+        totalResults = titleData.total || titleMangas.length;
+      }
+
+      // Also search by author name
+      const authorIds = await searchAuthorsByName(query.trim());
+      if (authorIds.length > 0) {
+        const authorParams = new URLSearchParams();
+        authorIds.forEach((id) => {
+          authorParams.append("authors[]", id);
+        });
+        authorParams.append("limit", Math.min(limit * 2, 100).toString());
+        authorParams.append("offset", offset.toString());
+        authorParams.append("includes[]", "cover_art");
+        authorParams.append("includes[]", "author");
+        authorParams.append("includes[]", "artist");
+        authorParams.append("contentRating[]", "safe");
+        authorParams.append("contentRating[]", "suggestive");
+        authorParams.append("contentRating[]", "erotica");
+
+        if (status && status !== "All") {
+          const statusMap: Record<string, string> = {
+            Ongoing: "ongoing",
+            Completed: "completed",
+            Hiatus: "hiatus",
+          };
+          if (statusMap[status]) {
+            authorParams.append("status[]", statusMap[status]);
+          }
+        }
+
+        const authorUrl = `${MANGADEX_BASE}/manga?${authorParams.toString()}`;
+        const authorData = (await rateLimitedFetch(authorUrl)) as MangaDexResponse;
+
+        if (authorData && authorData.data && Array.isArray(authorData.data)) {
+          const authorMangas = authorData.data
+            .map(transformMangaDexToManga)
+            .filter((m): m is NonNullable<typeof m> => m !== null);
+          
+          // Merge with title results, avoiding duplicates
+          const existingIds = new Set(allMangas.map((m) => m.id));
+          const newMangas = authorMangas.filter((m) => !existingIds.has(m.id));
+          allMangas.push(...newMangas);
+          
+          // Update total (use the larger of the two)
+          if (authorData.total && authorData.total > totalResults) {
+            totalResults = authorData.total;
+          }
+        }
+      }
+    } else {
+      // No search query - just fetch normally
+      const params = new URLSearchParams();
+      params.append("limit", Math.min(limit, 100).toString());
+      params.append("offset", offset.toString());
+      params.append("includes[]", "cover_art");
+      params.append("includes[]", "author");
+      params.append("includes[]", "artist");
+      params.append("contentRating[]", "safe");
+      params.append("contentRating[]", "suggestive");
+      params.append("contentRating[]", "erotica");
+
+      if (status && status !== "All") {
+        const statusMap: Record<string, string> = {
+          Ongoing: "ongoing",
+          Completed: "completed",
+          Hiatus: "hiatus",
+        };
+        if (statusMap[status]) {
+          params.append("status[]", statusMap[status]);
+        }
+      }
+
+      const url = `${MANGADEX_BASE}/manga?${params.toString()}`;
+      const data = (await rateLimitedFetch(url)) as MangaDexResponse;
+
+      if (data && data.data && Array.isArray(data.data)) {
+        allMangas = data.data
+          .map(transformMangaDexToManga)
+          .filter((m): m is NonNullable<typeof m> => m !== null);
+        totalResults = data.total || allMangas.length;
       }
     }
 
-    const url = `${MANGADEX_BASE}/manga?${params.toString()}`;
-    const data = (await rateLimitedFetch(url)) as MangaDexResponse;
-
-    // Check if we have valid data
-    if (!data || !data.data || !Array.isArray(data.data)) {
-      console.error("Invalid MangaDex response:", data);
-      throw new Error("Invalid response from MangaDex API");
+    // Sort by relevance (manga with matching author names first, then titles)
+    if (query.trim()) {
+      const queryLower = query.trim().toLowerCase();
+      allMangas.sort((a, b) => {
+        const aAuthorMatch = a.author.toLowerCase().includes(queryLower);
+        const bAuthorMatch = b.author.toLowerCase().includes(queryLower);
+        if (aAuthorMatch && !bAuthorMatch) return -1;
+        if (!aAuthorMatch && bAuthorMatch) return 1;
+        return 0;
+      });
     }
 
-    // Transform MangaDex response to our format
-    const mangas = data.data
-      .map(transformMangaDexToManga)
-      .filter((m): m is NonNullable<typeof m> => m !== null);
-
-    // Calculate pagination
-    const total = data.total || mangas.length;
-    const totalPages = Math.ceil(total / limit);
+    // Paginate results
+    const paginatedMangas = allMangas.slice(0, limit);
+    const totalPages = Math.ceil(totalResults / limit);
 
     return NextResponse.json({
-      data: mangas,
+      data: paginatedMangas,
       pagination: {
         page: Math.floor(offset / limit) + 1,
         limit,
-        total,
-        total_pages: totalPages,
+        total: totalResults || paginatedMangas.length,
+        total_pages: totalPages || 1,
       },
     });
   } catch (error: unknown) {

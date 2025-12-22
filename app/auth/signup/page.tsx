@@ -3,9 +3,6 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
-
 export default function SignUpPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -28,7 +25,8 @@ export default function SignUpPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
+      // Call Next.js API route, which proxies to the Go backend.
+      const res = await fetch(`/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

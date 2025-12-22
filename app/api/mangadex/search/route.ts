@@ -33,6 +33,9 @@ interface MangaDexResponse {
   total?: number;
 }
 
+// Concrete, non-null manga returned by transformMangaDexToManga
+type MangaResult = Exclude<ReturnType<typeof transformMangaDexToManga>, null>;
+
 // Rate limiting: delay between requests (200ms = 5 req/sec)
 let lastRequestTime = 0;
 const MIN_DELAY_MS = 200;
@@ -97,7 +100,8 @@ async function rateLimitedFetch(url: string, retries = 3) {
       // Check for network errors (including ECONNREFUSED)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      const errorCode = (error as any)?.code;
+      const errorWithCode = error as { code?: string | number } | undefined;
+      const errorCode = errorWithCode?.code;
 
       const isNetworkError =
         error instanceof TypeError ||
@@ -237,10 +241,10 @@ async function searchAuthorsByName(name: string): Promise<string[]> {
     const params = new URLSearchParams();
     params.append("name", name.trim());
     params.append("limit", "10"); // Limit to 10 authors max
-    
+
     const url = `${MANGADEX_BASE}/author?${params.toString()}`;
     const data = (await rateLimitedFetch(url)) as MangaDexAuthorResponse;
-    
+
     if (data && data.data && Array.isArray(data.data)) {
       return data.data.map((author) => author.id);
     }
@@ -265,8 +269,7 @@ export async function GET(request: NextRequest) {
     // When filtering by genre, we need to fetch more items and filter client-side
     // Strategy: Fetch batches, calculate filter ratio, estimate total
     if (hasGenreFilter) {
-      const allFilteredMangas: ReturnType<typeof transformMangaDexToManga>[] =
-        [];
+      const allFilteredMangas: MangaResult[] = [];
       let currentOffset = 0;
       const batchSize = 100; // Fetch 100 at a time from MangaDex
       const maxFetches = 10; // Safety limit: max 10 batches (1000 items)
@@ -331,7 +334,7 @@ export async function GET(request: NextRequest) {
         // Transform and filter
         const mangas = data.data
           .map(transformMangaDexToManga)
-          .filter((m): m is NonNullable<typeof m> => m !== null);
+          .filter((m): m is MangaResult => m !== null);
 
         totalFetched += mangas.length;
 
@@ -412,9 +415,9 @@ export async function GET(request: NextRequest) {
       const titleData = (await rateLimitedFetch(titleUrl)) as MangaDexResponse;
 
       if (titleData && titleData.data && Array.isArray(titleData.data)) {
-        const titleMangas = titleData.data
+        const titleMangas: MangaResult[] = titleData.data
           .map(transformMangaDexToManga)
-          .filter((m): m is NonNullable<typeof m> => m !== null);
+          .filter((m): m is MangaResult => m !== null);
         allMangas.push(...titleMangas);
         totalResults = titleData.total || titleMangas.length;
       }
@@ -447,18 +450,26 @@ export async function GET(request: NextRequest) {
         }
 
         const authorUrl = `${MANGADEX_BASE}/manga?${authorParams.toString()}`;
-        const authorData = (await rateLimitedFetch(authorUrl)) as MangaDexResponse;
+        const authorData = (await rateLimitedFetch(
+          authorUrl
+        )) as MangaDexResponse;
 
         if (authorData && authorData.data && Array.isArray(authorData.data)) {
-          const authorMangas = authorData.data
+          const authorMangas: MangaResult[] = authorData.data
             .map(transformMangaDexToManga)
-            .filter((m): m is NonNullable<typeof m> => m !== null);
-          
+            .filter((m): m is MangaResult => m !== null);
+
           // Merge with title results, avoiding duplicates
-          const existingIds = new Set(allMangas.map((m) => m.id));
-          const newMangas = authorMangas.filter((m) => !existingIds.has(m.id));
+          const existingIds = new Set(
+            allMangas
+              .filter((m): m is MangaResult => m !== null)
+              .map((m) => m.id)
+          );
+          const newMangas = authorMangas.filter(
+            (m): m is MangaResult => m !== null && !existingIds.has(m.id)
+          );
           allMangas.push(...newMangas);
-          
+
           // Update total (use the larger of the two)
           if (authorData.total && authorData.total > totalResults) {
             totalResults = authorData.total;
@@ -494,7 +505,7 @@ export async function GET(request: NextRequest) {
       if (data && data.data && Array.isArray(data.data)) {
         allMangas = data.data
           .map(transformMangaDexToManga)
-          .filter((m): m is NonNullable<typeof m> => m !== null);
+          .filter((m): m is MangaResult => m !== null);
         totalResults = data.total || allMangas.length;
       }
     }
@@ -503,6 +514,8 @@ export async function GET(request: NextRequest) {
     if (query.trim()) {
       const queryLower = query.trim().toLowerCase();
       allMangas.sort((a, b) => {
+        // Guard against any unexpected nulls to satisfy the type checker
+        if (!a || !b) return 0;
         const aAuthorMatch = a.author.toLowerCase().includes(queryLower);
         const bAuthorMatch = b.author.toLowerCase().includes(queryLower);
         if (aAuthorMatch && !bAuthorMatch) return -1;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type ChatMessageType =
   | "chat"
@@ -38,13 +38,12 @@ type Conversation = {
 };
 
 export default function ChatPage() {
-  const router = useRouter();
   const [username, setUsername] = useState("");
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
-  const [selectedRoom, setSelectedRoom] = useState<string>("friends");
+  const [selectedRoom, setSelectedRoom] = useState<string>("general");
   const [conversations, setConversations] = useState<Conversation[]>([
     {
       id: "friends",
@@ -101,10 +100,14 @@ export default function ChatPage() {
   }, []);
 
   const connect = () => {
-    if (!activeName) return;
+    // Wait for username to be loaded (username starts as empty string)
+    if (!username || username.trim() === "") {
+      return;
+    }
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
 
     const url = `${WS_URL}?username=${encodeURIComponent(activeName)}`;
+    console.log("[Chat] Connecting with username:", activeName);
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
@@ -125,6 +128,14 @@ export default function ChatPage() {
       try {
         const payload: ChatMessage = JSON.parse(event.data);
         const room = payload.room || "general";
+        console.log(
+          "[Chat] Received message:",
+          payload.type,
+          "from",
+          payload.username,
+          "in room",
+          room
+        );
 
         if (payload.type === "typing") {
           if (payload.username !== activeName) {
@@ -182,7 +193,7 @@ export default function ChatPage() {
       wsRef.current?.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeName]);
+  }, [username, activeName]);
 
   const handleTypingIndicator = (room: string, user: string) => {
     const key = `${room}:${user}`;
@@ -204,16 +215,32 @@ export default function ChatPage() {
     }, 2000);
   };
 
-  const sendMessage = (type: ChatMessageType, message?: string, target?: string) => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+  const sendMessage = (
+    type: ChatMessageType,
+    message?: string,
+    target?: string
+  ) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.log("[Chat] Cannot send: WebSocket not open");
+      return;
+    }
+    const room = selectedRoom === "friends" ? "general" : selectedRoom;
     const payload: ChatMessage = {
       type,
       username: activeName,
       message,
       timestamp: Math.floor(Date.now() / 1000),
-      room: selectedRoom,
+      room,
       target,
     };
+    console.log(
+      "[Chat] Sending message:",
+      type,
+      "as",
+      activeName,
+      "to room",
+      room
+    );
     wsRef.current.send(JSON.stringify(payload));
   };
 
@@ -250,7 +277,11 @@ export default function ChatPage() {
     if (typeof window === "undefined") return;
     const friendName = window.prompt("Enter friend's username:");
     if (!friendName || friendName.trim() === activeName) return;
-    sendMessage("friend_request", `Friend request from ${activeName}`, friendName.trim());
+    sendMessage(
+      "friend_request",
+      `Friend request from ${activeName}`,
+      friendName.trim()
+    );
     setMessages((prev) => [
       ...prev,
       {
@@ -294,9 +325,24 @@ export default function ChatPage() {
 
   const visibleMessages = messages.filter((msg) => {
     // Friend/system events in "system" room are always visible regardless of selected room
-    if (msg.type === "friend_request" || msg.type === "friend_response" || msg.type === "system") {
+    if (
+      msg.type === "friend_request" ||
+      msg.type === "friend_response" ||
+      msg.type === "system"
+    ) {
       return true;
     }
+    // Handle "friends" view - show DMs or general room messages
+    if (selectedRoom === "friends") {
+      // Show general room messages in friends view, or DMs if they exist
+      const msgRoom = msg.room || "general";
+      return msgRoom === "general" || msgRoom.startsWith("dm:");
+    }
+    // For DM rooms, only show messages in that specific DM
+    if (selectedRoom.startsWith("dm:")) {
+      return (msg.room || "general") === selectedRoom;
+    }
+    // For other rooms, match exactly
     return (msg.room || "general") === selectedRoom;
   });
 
@@ -309,8 +355,7 @@ export default function ChatPage() {
             MangaHub Chat
           </span>
           <span className="text-lg font-bold leading-tight">
-            {conversations.find((c) => c.id === selectedRoom)?.label ||
-              "Chat"}
+            {conversations.find((c) => c.id === selectedRoom)?.label || "Chat"}
           </span>
           <span className="text-xs text-text-sub-light dark:text-text-sub-dark">
             {connected ? "Connected" : "Disconnected"} as {activeName}
@@ -471,27 +516,27 @@ export default function ChatPage() {
       {/* Bottom Navigation */}
       <nav className="pb-safe fixed bottom-0 left-0 z-50 w-full border-t border-gray-100 bg-surface-light/95 backdrop-blur-lg pt-2 dark:border-gray-800 dark:bg-surface-dark/95">
         <div className="flex h-16 items-center justify-around px-2">
-          <a
+          <Link
             href="/"
             className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
           >
             <span className="material-symbols-outlined">home</span>
             <span className="text-[10px] font-medium">Home</span>
-          </a>
-          <a
+          </Link>
+          <Link
             href="/library"
             className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
           >
             <span className="material-symbols-outlined">library_books</span>
             <span className="text-[10px] font-medium">Library</span>
-          </a>
-          <a
+          </Link>
+          <Link
             href="/discover"
             className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
           >
             <span className="material-symbols-outlined">search</span>
             <span className="text-[10px] font-medium">Search</span>
-          </a>
+          </Link>
           <div className="flex flex-1 flex-col items-center gap-1 p-2 text-text-main-light dark:text-text-main-dark">
             <div className="flex flex-col items-center rounded-full bg-primary/20 px-4 py-0.5 dark:bg-primary/10">
               <span className="material-symbols-outlined text-black dark:text-primary">
@@ -507,5 +552,3 @@ export default function ChatPage() {
     </div>
   );
 }
-
-

@@ -358,7 +358,7 @@ export default function DiscoverPage() {
       </div>
 
       {/* Filter Chips */}
-      <div className="px-6 py-4">
+      <div className="px-6 py-4 pb-3">
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => handleGenreClick("All")}
@@ -452,7 +452,7 @@ export default function DiscoverPage() {
       </div>
 
       {/* Results Grid */}
-      <div className="px-6 py-2">
+      <div className="px-6 py-2 pb-24">
         {loading && (
           <div className="flex items-center justify-center py-12">
             <p className="text-text-sub-light dark:text-text-sub-dark">

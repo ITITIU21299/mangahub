@@ -357,13 +357,6 @@ export default function LibraryPage() {
       )}
 
       {/* Floating Action Button - Navigate to Discover */}
-      <button
-        onClick={() => router.push("/discover")}
-        className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-black shadow-[0_4px_12px_rgba(249,245,6,0.5)] transition-all hover:scale-105 active:scale-95"
-      >
-        <span className="material-symbols-outlined text-[32px]">add</span>
-      </button>
-
       {/* Bottom Navigation */}
       <nav className="pb-safe fixed bottom-0 left-0 z-50 w-full border-t border-gray-100 bg-surface-light/95 backdrop-blur-lg pt-2 dark:border-gray-800 dark:bg-surface-dark/95">
         <div className="flex h-16 items-center justify-around px-2">
@@ -390,6 +383,13 @@ export default function LibraryPage() {
           >
             <span className="material-symbols-outlined">search</span>
             <span className="text-[10px] font-medium">Search</span>
+          </a>
+          <a
+            href="/chat"
+            className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
+          >
+            <span className="material-symbols-outlined">chat</span>
+            <span className="text-[10px] font-medium">Chat</span>
           </a>
           <a
             href="/profile"

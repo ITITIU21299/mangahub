@@ -15,6 +15,12 @@ export default function Home() {
             Open Discover / Search
           </a>
           <a
+            href="/chat"
+            className="w-full rounded-full bg-primary/10 px-4 py-3 text-sm font-semibold text-text-main-light hover:bg-primary/20 dark:text-text-main-dark"
+          >
+            Open Chat
+          </a>
+          <a
             href="/library"
             className="w-full rounded-full border border-text-sub-light/40 px-4 py-3 text-sm font-medium hover:bg-surface-light dark:hover:bg-surface-dark"
           >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 
 const MANGADEX_API = "/api/mangadex";
@@ -53,8 +53,13 @@ export default function MangaDetailsPage() {
 
   const statusOptions = ["Reading", "Completed", "Plan to Read", "Dropped"];
 
+  // Guard to avoid duplicate fetches in React Strict Mode (dev) which mounts components twice.
+  const hasFetchedRef = useRef(false);
+
   useEffect(() => {
     if (!mangaId) return;
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     fetchMangaDetails();
   }, [mangaId]);
 
@@ -156,31 +161,6 @@ export default function MangaDetailsPage() {
           setSelectedStatus(progressData.status);
         } else {
           setCurrentChapter(0);
-        }
-
-        // Fetch notification subscription status (UC-009)
-        if (token) {
-          try {
-            setNotificationsLoading(true);
-            const res = await fetch(
-              `${LOCAL_API_BASE}/users/notifications/${mangaId}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
-            if (res.ok) {
-              const data = await res.json().catch(() => null);
-              if (data && typeof data.subscribed === "boolean") {
-                setNotificationsEnabled(data.subscribed);
-              }
-            }
-          } catch (err) {
-            // ignore notification errors in UI for now
-          } finally {
-            setNotificationsLoading(false);
-          }
         }
       }
     } catch (err) {

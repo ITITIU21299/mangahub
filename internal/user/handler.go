@@ -253,11 +253,6 @@ func (h *Handler) HandleCheckNotificationSubscription(c *gin.Context) {
 		return
 	}
 
-	// Best-effort re-register on UDP if subscribed
-	if subscribed {
-		go h.Service.ReRegisterNotification(userID, mangaID)
-	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"subscribed": subscribed,
 	})

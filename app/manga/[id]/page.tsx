@@ -263,23 +263,37 @@ export default function MangaDetailsPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        // UC-006 Alternative Flow A1: Invalid chapter number - show validation error
+        const errorType = data.type || "unknown_error";
+        const isValidationError = errorType === "validation_error";
         const isRetryable =
-          data.retry === true || data.type === "database_error";
+          data.retry === true || errorType === "database_error";
+
         setActionError(data.error || "Failed to update progress");
-        setCanRetry(isRetryable);
+        setCanRetry(isRetryable && !isValidationError); // Don't retry validation errors
         return;
       }
 
-      setSuccessMessage("Progress updated successfully!");
+      // UC-006 Main Success Scenario Step 5: Confirm update to user
+      let successMsg = data.message || "Progress updated successfully!";
+
+      // UC-006 Alternative Flow A2: TCP server unavailable - inform user but confirm local update
+      if (data.warning) {
+        successMsg += ` (${data.warning})`;
+      }
+
+      setSuccessMessage(successMsg);
       setTimeout(() => {
         setShowUpdateModal(false);
         setActionError(null);
         setSuccessMessage(null);
+        setCanRetry(false);
+        // Refresh manga details to get updated progress
         fetchMangaDetails();
       }, 1500);
     } catch (err) {
       setActionError(
-        "Network error. Please check your connection and try again."
+        "Network error: Unable to update progress. Please check your connection and try again."
       );
       setCanRetry(true);
     } finally {

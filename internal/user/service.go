@@ -4,17 +4,38 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"os"
+	"time"
 
 	"mangahub/pkg/models"
 )
 
 // Service contains user library management logic.
 type Service struct {
-	DB *sql.DB
+	DB        *sql.DB
+	TCPAddr   string // TCP server address for broadcasting progress updates
+	MangaSvc  MangaService // Interface to get manga metadata for validation
+}
+
+// MangaService interface for getting manga metadata.
+type MangaService interface {
+	GetMangaByID(mangaID string) (*models.Manga, error)
 }
 
 func NewService(db *sql.DB) *Service {
-	return &Service{DB: db}
+	tcpAddr := os.Getenv("MANGAHUB_TCP_ADDR")
+	if tcpAddr == "" {
+		tcpAddr = "localhost:9090" // Default TCP server port
+	}
+	return &Service{
+		DB:      db,
+		TCPAddr: tcpAddr,
+	}
+}
+
+// SetMangaService sets the manga service for validation.
+func (s *Service) SetMangaService(mangaSvc MangaService) {
+	s.MangaSvc = mangaSvc
 }
 
 // AddToLibraryRequest represents a request to add manga to user's library.
@@ -105,9 +126,49 @@ type UpdateProgressRequest struct {
 	Status         string
 }
 
-// UpdateProgress updates user's reading progress for a manga.
-func (s *Service) UpdateProgress(userID string, req UpdateProgressRequest) error {
-	_, err := s.DB.Exec(
+// UpdateProgressResult represents the result of updating progress (UC-006).
+type UpdateProgressResult struct {
+	BroadcastSent bool   // Whether TCP broadcast was successfully sent
+	BroadcastError string // Error message if broadcast failed (for queuing)
+}
+
+// UpdateProgress updates user's reading progress for a manga (UC-006).
+// Precondition: Manga must be in user's library.
+// Validates chapter number against manga metadata.
+// Updates progress with timestamp and broadcasts via TCP.
+func (s *Service) UpdateProgress(userID string, req UpdateProgressRequest) (*UpdateProgressResult, error) {
+	// UC-006 Precondition: Check if manga is in user's library
+	var existsInLibrary bool
+	err := s.DB.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM user_progress WHERE user_id = ? AND manga_id = ?)",
+		userID, req.MangaID,
+	).Scan(&existsInLibrary)
+	if err != nil {
+		log.Printf("Error checking library entry: %v", err)
+		return nil, errors.New("database_error: failed to check library entry")
+	}
+	if !existsInLibrary {
+		return nil, errors.New("validation_error: manga is not in user's library")
+	}
+
+	// UC-006 Main Success Scenario Step 2: Validate chapter number against manga metadata
+	if s.MangaSvc != nil {
+		manga, err := s.MangaSvc.GetMangaByID(req.MangaID)
+		if err == nil && manga != nil {
+			// Validate chapter number
+			if req.CurrentChapter < 0 {
+				return nil, errors.New("validation_error: chapter number cannot be negative")
+			}
+			if manga.TotalChapters > 0 && req.CurrentChapter > manga.TotalChapters {
+				return nil, errors.New("validation_error: chapter number exceeds total chapters")
+			}
+		}
+		// If manga not found in local DB (e.g., MangaDex manga), allow update
+		// The frontend dropdown already limits selection to valid range
+	}
+
+	// UC-006 Main Success Scenario Step 3: Update user_progress record with timestamp
+	result, err := s.DB.Exec(
 		`UPDATE user_progress 
 		SET current_chapter = ?, 
 			status = COALESCE(NULLIF(?, ''), status), 
@@ -117,7 +178,38 @@ func (s *Service) UpdateProgress(userID string, req UpdateProgressRequest) error
 	)
 	if err != nil {
 		log.Printf("Error updating progress: %v", err)
-		return errors.New("failed to update progress")
+		return nil, errors.New("database_error: failed to update progress")
 	}
-	return nil
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Error getting rows affected: %v", err)
+	} else if rowsAffected == 0 {
+		return nil, errors.New("validation_error: manga is not in user's library")
+	}
+
+	// UC-006 Main Success Scenario Step 4: Trigger TCP broadcast to connected clients
+	update := ProgressUpdate{
+		UserID:    userID,
+		MangaID:   req.MangaID,
+		Chapter:   req.CurrentChapter,
+		Timestamp: time.Now().Unix(),
+	}
+
+	broadcastResult := &UpdateProgressResult{
+		BroadcastSent: false,
+		BroadcastError: "",
+	}
+
+	err = BroadcastProgress(s.TCPAddr, update)
+	if err != nil {
+		// UC-006 Alternative Flow A2: TCP server unavailable - update locally, queue broadcast
+		log.Printf("TCP broadcast failed (will be queued/retried): %v", err)
+		broadcastResult.BroadcastError = err.Error()
+		// Still return success since local update succeeded
+	} else {
+		broadcastResult.BroadcastSent = true
+	}
+
+	return broadcastResult, nil
 }

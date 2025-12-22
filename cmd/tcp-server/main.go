@@ -72,8 +72,10 @@ func (s *ProgressSyncServer) handleConn(conn net.Conn) {
 		}
 		var upd ProgressUpdate
 		if err := json.Unmarshal(line, &upd); err != nil {
+			log.Printf("Failed to unmarshal progress update from %s: %v", userID, err)
 			continue
 		}
+		log.Printf("Received progress update from %s: manga=%s, chapter=%d", userID, upd.MangaID, upd.Chapter)
 		s.Broadcast <- upd
 	}
 
@@ -87,17 +89,25 @@ func (s *ProgressSyncServer) broadcastLoop() {
 	for upd := range s.Broadcast {
 		data, err := json.Marshal(upd)
 		if err != nil {
+			log.Printf("Failed to marshal broadcast update: %v", err)
 			continue
 		}
 		data = append(data, '\n')
 
 		s.mu.RLock()
+		clientCount := len(s.connections)
 		for userID, conn := range s.connections {
 			if _, err := conn.Write(data); err != nil {
 				log.Printf("failed to send to %s: %v", userID, err)
 			}
 		}
 		s.mu.RUnlock()
+		
+		if clientCount > 0 {
+			log.Printf("Broadcasted progress update: manga=%s, chapter=%d to %d client(s)", upd.MangaID, upd.Chapter, clientCount)
+		} else {
+			log.Printf("Broadcasted progress update: manga=%s, chapter=%d (no connected clients)", upd.MangaID, upd.Chapter)
+		}
 	}
 }
 

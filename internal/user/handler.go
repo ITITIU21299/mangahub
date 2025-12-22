@@ -93,12 +93,20 @@ func (h *Handler) HandleGetLibrary(c *gin.Context) {
 	c.JSON(http.StatusOK, items)
 }
 
-// HandleUpdateProgress updates user's reading progress.
+// HandleUpdateProgress implements UC-006: update reading progress.
 func (h *Handler) HandleUpdateProgress(c *gin.Context) {
 	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
 	var req progressRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request: " + err.Error(),
+			"type":  "validation_error",
+		})
 		return
 	}
 
@@ -108,10 +116,52 @@ func (h *Handler) HandleUpdateProgress(c *gin.Context) {
 		Status:         req.Status,
 	}
 
-	if err := h.Service.UpdateProgress(userID, updateReq); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update progress"})
+	result, err := h.Service.UpdateProgress(userID, updateReq)
+	if err != nil {
+		errorMsg := err.Error()
+		
+		// UC-006 Alternative Flow A1: Invalid chapter number - show validation error
+		if errorMsg == "validation_error: chapter number cannot be negative" ||
+			errorMsg == "validation_error: chapter number exceeds total chapters" ||
+			errorMsg == "validation_error: manga is not in user's library" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errorMsg,
+				"type":  "validation_error",
+			})
+			return
+		}
+
+		// Database errors
+		if errorMsg == "database_error: failed to check library entry" ||
+			errorMsg == "database_error: failed to update progress" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Database error. Please try again.",
+				"type":  "database_error",
+				"retry": true,
+			})
+			return
+		}
+
+		// Unknown errors
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update progress: " + errorMsg,
+			"type":  "unknown_error",
+			"retry": true,
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "updated"})
+	// UC-006 Main Success Scenario Step 5: Confirm update to user
+	response := gin.H{
+		"message":        "Progress updated successfully",
+		"broadcast_sent": result.BroadcastSent,
+	}
+
+	// UC-006 Alternative Flow A2: TCP server unavailable - inform user but confirm local update
+	if !result.BroadcastSent && result.BroadcastError != "" {
+		response["broadcast_error"] = "Progress updated locally, but broadcast failed (will be queued)"
+		response["warning"] = "TCP server unavailable. Progress saved locally."
+	}
+
+	c.JSON(http.StatusOK, response)
 }

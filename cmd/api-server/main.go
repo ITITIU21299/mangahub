@@ -42,6 +42,7 @@ func main() {
 	authSvc := auth.NewService(db)
 	mangaSvc := manga.NewService(db)
 	userSvc := user.NewService(db)
+	userSvc.SetMangaService(mangaSvc) // Set manga service for UC-006 validation
 
 	// Register auth routes and get middleware
 	authMiddleware := auth.RegisterRoutes(r, authSvc, jwtSecret)

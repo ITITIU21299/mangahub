@@ -69,56 +69,63 @@ export default function LibraryPage() {
         throw new Error("Failed to fetch library");
       }
 
-      const userProgress: UserProgress[] = await res.json();
+      const userProgressRaw = await res.json();
+      const userProgress: UserProgress[] = Array.isArray(userProgressRaw)
+        ? userProgressRaw
+        : [];
 
-      // Fetch manga details for each item
-      const libraryItems: LibraryItem[] = await Promise.all(
-        userProgress.map(async (progress) => {
-          let manga: Manga | undefined;
+      if (userProgress.length === 0) {
+        setLibrary([]);
+      } else {
+        // Fetch manga details for each item
+        const libraryItems: LibraryItem[] = await Promise.all(
+          userProgress.map(async (progress) => {
+            let manga: Manga | undefined;
 
-          try {
-            // Try to fetch from MangaDex first
-            const mangaRes = await fetch(
-              `${MANGADEX_API}/manga/${progress.manga_id}`
-            );
-            if (mangaRes.ok) {
-              manga = await mangaRes.json();
-            } else {
-              // Fallback to local API
-              const localRes = await fetch(
-                `${LOCAL_API_BASE}/manga/${progress.manga_id}`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
+            try {
+              // Try to fetch from MangaDex first
+              const mangaRes = await fetch(
+                `${MANGADEX_API}/manga/${progress.manga_id}`
               );
-              if (localRes.ok) {
-                const localData = await localRes.json();
-                manga = {
-                  id: localData.id,
-                  title: localData.title,
-                  author: localData.author,
-                  genres: localData.genres || [],
-                  status: localData.status,
-                  total_chapters: localData.total_chapters || 0,
-                  description: localData.description || "",
-                  cover_url: localData.cover_url || "",
-                };
+              if (mangaRes.ok) {
+                manga = await mangaRes.json();
+              } else {
+                // Fallback to local API
+                const localRes = await fetch(
+                  `${LOCAL_API_BASE}/manga/${progress.manga_id}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
+                if (localRes.ok) {
+                  const localData = await localRes.json();
+                  manga = {
+                    id: localData.id,
+                    title: localData.title,
+                    author: localData.author,
+                    genres: localData.genres || [],
+                    status: localData.status,
+                    total_chapters: localData.total_chapters || 0,
+                    description: localData.description || "",
+                    cover_url: localData.cover_url || "",
+                  };
+                }
               }
+            } catch (err) {
+              console.warn(`Failed to fetch manga ${progress.manga_id}:`, err);
             }
-          } catch (err) {
-            console.warn(`Failed to fetch manga ${progress.manga_id}:`, err);
-          }
 
-          return {
-            ...progress,
-            manga,
-          };
-        })
-      );
+            return {
+              ...progress,
+              manga,
+            };
+          })
+        );
 
-      setLibrary(libraryItems);
+        setLibrary(libraryItems);
+      }
     } catch (err) {
       console.error("Error fetching library:", err);
       setError("Failed to load library. Please try again.");

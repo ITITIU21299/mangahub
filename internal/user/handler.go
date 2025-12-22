@@ -22,6 +22,10 @@ type progressRequest struct {
 	Status         string `json:"status"`
 }
 
+type notifyRequest struct {
+	MangaID string `json:"manga_id" binding:"required"`
+}
+
 // RegisterRoutes registers user library HTTP endpoints.
 func RegisterRoutes(r *gin.RouterGroup, svc *Service) {
 	h := &Handler{Service: svc}
@@ -29,6 +33,9 @@ func RegisterRoutes(r *gin.RouterGroup, svc *Service) {
 	r.POST("/users/library", h.HandleAddToLibrary)
 	r.GET("/users/library", h.HandleGetLibrary)
 	r.PUT("/users/progress", h.HandleUpdateProgress)
+	r.POST("/users/notifications", h.HandleSubscribeNotifications)
+	r.GET("/users/notifications/:manga_id", h.HandleCheckNotificationSubscription)
+	r.DELETE("/users/notifications/:manga_id", h.HandleUnsubscribeNotifications)
 }
 
 // HandleAddToLibrary implements UC-005: add manga to library.
@@ -164,4 +171,131 @@ func (h *Handler) HandleUpdateProgress(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// HandleSubscribeNotifications subscribes the user to notifications for a manga (UC-009).
+func (h *Handler) HandleSubscribeNotifications(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	var req notifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request: " + err.Error(),
+			"type":  "validation_error",
+		})
+		return
+	}
+
+	if err := h.Service.SubscribeToMangaNotifications(userID, req.MangaID); err != nil {
+		errorMsg := err.Error()
+		if errorMsg == "database_error: failed to save notification subscription" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Database error. Please try again.",
+				"type":  "database_error",
+				"retry": true,
+			})
+			return
+		}
+		if errorMsg == "validation_error: user_id and manga_id are required" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errorMsg,
+				"type":  "validation_error",
+			})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to subscribe to notifications: " + errorMsg,
+			"type":  "unknown_error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Subscribed to notifications for this manga",
+	})
+}
+
+// HandleCheckNotificationSubscription returns whether the user is subscribed for a given manga.
+func (h *Handler) HandleCheckNotificationSubscription(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	mangaID := c.Param("manga_id")
+	subscribed, err := h.Service.IsSubscribedToMangaNotifications(userID, mangaID)
+	if err != nil {
+		errorMsg := err.Error()
+		if errorMsg == "database_error: failed to check notification subscription" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Database error. Please try again.",
+				"type":  "database_error",
+			})
+			return
+		}
+		if errorMsg == "validation_error: user_id and manga_id are required" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errorMsg,
+				"type":  "validation_error",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to check subscription: " + errorMsg,
+			"type":  "unknown_error",
+		})
+		return
+	}
+
+	// Best-effort re-register on UDP if subscribed
+	if subscribed {
+		go h.Service.ReRegisterNotification(userID, mangaID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"subscribed": subscribed,
+	})
+}
+
+// HandleUnsubscribeNotifications disables notifications for a manga for the user.
+func (h *Handler) HandleUnsubscribeNotifications(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	mangaID := c.Param("manga_id")
+	if err := h.Service.UnsubscribeFromMangaNotifications(userID, mangaID); err != nil {
+		errorMsg := err.Error()
+		if errorMsg == "database_error: failed to delete notification subscription" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Database error. Please try again.",
+				"type":  "database_error",
+			})
+			return
+		}
+		if errorMsg == "validation_error: user_id and manga_id are required" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errorMsg,
+				"type":  "validation_error",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to unsubscribe: " + errorMsg,
+			"type":  "unknown_error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Notifications disabled for this manga",
+	})
 }

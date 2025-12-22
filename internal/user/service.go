@@ -12,9 +12,9 @@ import (
 
 // Service contains user library management logic.
 type Service struct {
-	DB        *sql.DB
-	TCPAddr   string // TCP server address for broadcasting progress updates
-	MangaSvc  MangaService // Interface to get manga metadata for validation
+	DB       *sql.DB
+	TCPAddr  string      // TCP server address for broadcasting progress updates
+	MangaSvc MangaService // Interface to get manga metadata for validation
 }
 
 // MangaService interface for getting manga metadata.
@@ -36,6 +36,99 @@ func NewService(db *sql.DB) *Service {
 // SetMangaService sets the manga service for validation.
 func (s *Service) SetMangaService(mangaSvc MangaService) {
 	s.MangaSvc = mangaSvc
+}
+
+// -------------------- Notification Subscriptions (UC-009) --------------------
+
+// SubscribeToMangaNotifications subscribes the user to notifications for a manga
+// and registers them with the UDP notification server.
+func (s *Service) SubscribeToMangaNotifications(userID, mangaID string) error {
+	if userID == "" || mangaID == "" {
+		return errors.New("validation_error: user_id and manga_id are required")
+	}
+
+	// Store subscription in DB (idempotent thanks to PRIMARY KEY)
+	_, err := s.DB.Exec(
+		`INSERT OR IGNORE INTO user_notifications (user_id, manga_id) VALUES (?, ?)`,
+		userID, mangaID,
+	)
+	if err != nil {
+		log.Printf("Error saving notification subscription: %v", err)
+		return errors.New("database_error: failed to save notification subscription")
+	}
+
+	// Register client with UDP notification server based on userID and mangaID.
+	// For this project we use localhost:9091; this can be moved to config if needed.
+	_, udpErr := RegisterForUDPNotifications(UDPRegisterOptions{
+		ServerAddr: "localhost:9091",
+		UserID:     userID,
+		MangaIDs:   []string{mangaID},
+	})
+	if udpErr != nil {
+		log.Printf("UDP registration failed for user %s manga %s: %v", userID, mangaID, udpErr)
+		// We still treat subscription as successful in DB; frontend can show a warning if needed.
+	}
+
+	return nil
+}
+
+// IsSubscribedToMangaNotifications checks if the user is subscribed for a manga.
+func (s *Service) IsSubscribedToMangaNotifications(userID, mangaID string) (bool, error) {
+	if userID == "" || mangaID == "" {
+		return false, errors.New("validation_error: user_id and manga_id are required")
+	}
+
+	var exists bool
+	err := s.DB.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM user_notifications WHERE user_id = ? AND manga_id = ?)`,
+		userID, mangaID,
+	).Scan(&exists)
+	if err != nil {
+		log.Printf("Error checking notification subscription: %v", err)
+		return false, errors.New("database_error: failed to check notification subscription")
+	}
+	return exists, nil
+}
+
+// ReRegisterNotification is a best-effort UDP registration, useful when the UDP server was down.
+func (s *Service) ReRegisterNotification(userID, mangaID string) {
+	if userID == "" || mangaID == "" {
+		return
+	}
+	if _, err := RegisterForUDPNotifications(UDPRegisterOptions{
+		ServerAddr: "localhost:9091",
+		UserID:     userID,
+		MangaIDs:   []string{mangaID},
+	}); err != nil {
+		log.Printf("UDP re-register failed for user %s manga %s: %v", userID, mangaID, err)
+	}
+}
+
+// UnsubscribeFromMangaNotifications removes a user's subscription for a manga.
+func (s *Service) UnsubscribeFromMangaNotifications(userID, mangaID string) error {
+	if userID == "" || mangaID == "" {
+		return errors.New("validation_error: user_id and manga_id are required")
+	}
+
+	_, err := s.DB.Exec(
+		`DELETE FROM user_notifications WHERE user_id = ? AND manga_id = ?`,
+		userID, mangaID,
+	)
+	if err != nil {
+		log.Printf("Error deleting notification subscription: %v", err)
+		return errors.New("database_error: failed to delete notification subscription")
+	}
+
+	// Send unregister to UDP server (best effort)
+	if udpErr := UnregisterForUDPNotifications(UDPUnregisterOptions{
+		ServerAddr: "localhost:9091",
+		UserID:     userID,
+		MangaIDs:   []string{mangaID},
+	}); udpErr != nil {
+		log.Printf("UDP unregister failed for user %s manga %s: %v", userID, mangaID, udpErr)
+	}
+
+	return nil
 }
 
 // AddToLibraryRequest represents a request to add manga to user's library.

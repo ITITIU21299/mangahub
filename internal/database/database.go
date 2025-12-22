@@ -49,6 +49,12 @@ func migrate(db *sql.DB) error {
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (user_id, manga_id)
 		);`,
+		`CREATE TABLE IF NOT EXISTS user_notifications (
+			user_id TEXT,
+			manga_id TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, manga_id)
+		);`,
 	}
 
 	for _, stmt := range stmts {

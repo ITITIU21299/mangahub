@@ -30,3 +30,10 @@ type UserProgress struct {
 	Status         string    `json:"status"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
+
+// UserNotification represents a user's subscription to notifications for a manga.
+type UserNotification struct {
+	UserID    string    `json:"user_id"`
+	MangaID   string    `json:"manga_id"`
+	CreatedAt time.Time `json:"created_at"`
+}

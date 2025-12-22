@@ -48,6 +48,8 @@ export default function MangaDetailsPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [canRetry, setCanRetry] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   const statusOptions = ["Reading", "Completed", "Plan to Read", "Dropped"];
 
@@ -154,6 +156,31 @@ export default function MangaDetailsPage() {
           setSelectedStatus(progressData.status);
         } else {
           setCurrentChapter(0);
+        }
+
+        // Fetch notification subscription status (UC-009)
+        if (token) {
+          try {
+            setNotificationsLoading(true);
+            const res = await fetch(
+              `${LOCAL_API_BASE}/users/notifications/${mangaId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+            if (res.ok) {
+              const data = await res.json().catch(() => null);
+              if (data && typeof data.subscribed === "boolean") {
+                setNotificationsEnabled(data.subscribed);
+              }
+            }
+          } catch (err) {
+            // ignore notification errors in UI for now
+          } finally {
+            setNotificationsLoading(false);
+          }
         }
       }
     } catch (err) {
@@ -301,6 +328,56 @@ export default function MangaDetailsPage() {
     }
   };
 
+  const handleToggleNotifications = async () => {
+    if (!manga) return;
+
+    setNotificationsLoading(true);
+    try {
+      const token = localStorage.getItem("mangahub_token");
+      if (!token) {
+        router.push("/auth/signin");
+        return;
+      }
+
+      let res: Response;
+
+      if (!notificationsEnabled) {
+        // Subscribe
+        res = await fetch(`${LOCAL_API_BASE}/users/notifications`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ manga_id: manga.id }),
+        });
+      } else {
+        // Unsubscribe
+        res = await fetch(`${LOCAL_API_BASE}/users/notifications/${manga.id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error(
+          "Failed to toggle notifications:",
+          data.error || res.statusText
+        );
+        return;
+      }
+
+      setNotificationsEnabled(!notificationsEnabled);
+    } catch (err) {
+      console.error("Error subscribing to notifications:", err);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background-light text-text-main-light dark:bg-background-dark dark:text-text-main-dark">
@@ -424,7 +501,7 @@ export default function MangaDetailsPage() {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-2 flex gap-3">
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
               {!userProgress ? (
                 <button
                   onClick={() => setShowAddModal(true)}
@@ -444,6 +521,19 @@ export default function MangaDetailsPage() {
                   Update Progress
                 </button>
               )}
+              <button
+                onClick={handleToggleNotifications}
+                disabled={notificationsLoading}
+                className="flex-1 rounded-full bg-surface-light px-4 py-3 text-sm font-bold text-text-main-light shadow-sm ring-1 ring-black/10 transition-all hover:bg-black/5 active:scale-95 dark:bg-surface-dark dark:text-text-main-dark dark:ring-white/10 dark:hover:bg-white/5 disabled:opacity-60"
+              >
+                {notificationsEnabled
+                  ? notificationsLoading
+                    ? "Disabling..."
+                    : "Disable notifications"
+                  : notificationsLoading
+                  ? "Enabling..."
+                  : "Notify me on new chapters"}
+              </button>
             </div>
           </div>
         </div>

@@ -37,6 +37,9 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
+  const [page, setPage] = useState<number>(1);
+
+  const PAGE_SIZE = 20;
 
   const statuses = ["All", "Reading", "Completed", "Plan to Read", "Dropped"];
 
@@ -75,7 +78,9 @@ export default function LibraryPage() {
 
           try {
             // Try to fetch from MangaDex first
-            const mangaRes = await fetch(`${MANGADEX_API}/manga/${progress.manga_id}`);
+            const mangaRes = await fetch(
+              `${MANGADEX_API}/manga/${progress.manga_id}`
+            );
             if (mangaRes.ok) {
               manga = await mangaRes.json();
             } else {
@@ -124,6 +129,7 @@ export default function LibraryPage() {
 
   const handleStatusFilter = (status: string) => {
     setSelectedStatus(status);
+    setPage(1); // reset to first page when filter changes
   };
 
   const handleMangaClick = (mangaId: string) => {
@@ -136,12 +142,12 @@ export default function LibraryPage() {
       ? library
       : library.filter((item) => item.status === selectedStatus);
 
-  // Separate into "Continue Reading" (Reading status) and others
-  const continueReading = filteredLibrary.filter(
-    (item) => item.status === "Reading"
-  );
-  const otherItems = filteredLibrary.filter(
-    (item) => item.status !== "Reading"
+  // Pagination (client-side) similar to discover page
+  const totalPages = Math.max(1, Math.ceil(filteredLibrary.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedItems = filteredLibrary.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
   );
 
   // Calculate progress percentage
@@ -212,9 +218,7 @@ export default function LibraryPage() {
             >
               <p
                 className={`text-sm font-medium leading-normal ${
-                  selectedStatus === status
-                    ? "font-bold text-black"
-                    : ""
+                  selectedStatus === status ? "font-bold text-black" : ""
                 }`}
               >
                 {status}
@@ -248,155 +252,100 @@ export default function LibraryPage() {
         </div>
       ) : (
         <>
-          {/* Continue Reading Section */}
-          {continueReading.length > 0 && (
-            <section className="mt-4">
-              <h2 className="px-4 pb-3 text-[22px] font-bold leading-tight tracking-[-0.015em]">
-                Continue Reading
+          {/* Vertical grid layout similar to Discover page */}
+          <section className="px-4 py-4">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-[22px] font-bold leading-tight tracking-[-0.015em]">
+                {selectedStatus === "All" ? "All Manga" : selectedStatus}
               </h2>
-              <div className="no-scrollbar flex gap-4 overflow-x-auto pb-4 pl-4">
-                {continueReading.map((item) => (
-                  <div
-                    key={item.manga_id}
-                    onClick={() => handleMangaClick(item.manga_id)}
-                    className="flex min-w-[280px] w-[280px] snap-start flex-col gap-4 rounded-2xl bg-surface-light p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-lg cursor-pointer dark:bg-surface-dark"
-                  >
-                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-200 dark:bg-gray-800">
-                      {item.manga?.cover_url ? (
-                        <img
-                          src={item.manga.cover_url}
-                          alt={item.manga.title}
-                          className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display =
-                              "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <span className="material-symbols-outlined text-4xl text-text-sub-light dark:text-text-sub-dark">
-                            image
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="line-clamp-1 text-lg font-bold leading-tight">
-                            {item.manga?.title || "Unknown Manga"}
-                          </h3>
-                          <p className="mt-1 line-clamp-1 text-sm text-text-sub-light dark:text-text-sub-dark">
-                            {item.manga?.author || "Unknown Author"}
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-end ml-2">
-                          <span className="text-sm font-bold text-primary">
-                            Ch. {item.current_chapter}
-                          </span>
-                          {item.manga?.total_chapters ? (
-                            <span className="text-xs text-text-sub-light dark:text-text-sub-dark">
-                              of {item.manga.total_chapters}+
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                      {item.manga && item.manga.total_chapters > 0 && (
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-                          <div
-                            className="h-full rounded-full bg-primary transition-all"
-                            style={{
-                              width: `${getProgressPercentage(item)}%`,
-                            }}
-                          />
-                        </div>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/manga/${item.manga_id}`);
+              <p className="text-sm text-text-sub-light dark:text-text-sub-dark">
+                Page {currentPage} of {totalPages} • {filteredLibrary.length}{" "}
+                item
+                {filteredLibrary.length === 1 ? "" : "s"}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 pb-4">
+              {paginatedItems.map((item) => (
+                <div
+                  key={item.manga_id}
+                  onClick={() => handleMangaClick(item.manga_id)}
+                  className="group flex cursor-pointer flex-col gap-2"
+                >
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg bg-gray-200 dark:bg-gray-800">
+                    {item.manga?.cover_url ? (
+                      <img
+                        src={item.manga.cover_url}
+                        alt={item.manga.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
                         }}
-                        className="mt-1 flex h-11 w-full cursor-pointer items-center justify-center rounded-full bg-primary text-sm font-bold text-black shadow-sm transition-all active:scale-[0.98] hover:shadow-md"
-                      >
-                        Update Progress
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Other Items Section */}
-          {otherItems.length > 0 && (
-            <section className="mt-2 px-4">
-              <div className="flex items-center justify-between pb-3 pt-2">
-                <h2 className="text-[22px] font-bold leading-tight tracking-[-0.015em]">
-                  {selectedStatus === "All"
-                    ? "All Manga"
-                    : selectedStatus === "Reading"
-                      ? "Continue Reading"
-                      : selectedStatus}
-                </h2>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {otherItems.map((item) => (
-                  <div
-                    key={item.manga_id}
-                    onClick={() => handleMangaClick(item.manga_id)}
-                    className="flex items-center gap-4 rounded-2xl bg-surface-light p-3 shadow-sm transition-all hover:shadow-md cursor-pointer dark:bg-surface-dark"
-                  >
-                    <div className="h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-800">
-                      {item.manga?.cover_url ? (
-                        <img
-                          src={item.manga.cover_url}
-                          alt={item.manga.title}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display =
-                              "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <span className="material-symbols-outlined text-xl text-text-sub-light dark:text-text-sub-dark">
-                            image
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-1 flex-col justify-center gap-1 min-w-0">
-                      <h3 className="text-base font-bold leading-tight line-clamp-1">
-                        {item.manga?.title || "Unknown Manga"}
-                      </h3>
-                      <p className="text-xs text-text-sub-light dark:text-text-sub-dark line-clamp-1">
-                        {item.manga?.author || "Unknown Author"}
-                      </p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="text-xs font-medium text-primary">
-                          Ch. {item.current_chapter}
-                        </span>
-                        {item.manga?.total_chapters ? (
-                          <>
-                            <span className="text-xs text-text-sub-light dark:text-text-sub-dark">
-                              /
-                            </span>
-                            <span className="text-xs text-text-sub-light dark:text-text-sub-dark">
-                              {item.manga.total_chapters}
-                            </span>
-                          </>
-                        ) : null}
-                        <span className="ml-auto rounded-full bg-surface-light px-2 py-0.5 text-[10px] font-medium dark:bg-surface-dark">
-                          {item.status}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl text-text-sub-light dark:text-text-sub-dark">
+                          image
                         </span>
                       </div>
+                    )}
+                    <div className="absolute left-1.5 top-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-black">
+                      {item.status}
                     </div>
+                    {item.manga && item.manga.total_chapters > 0 && (
+                      <div className="absolute bottom-1.5 left-1.5 right-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${getProgressPercentage(item)}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
-                ))}
+                  <div className="px-0.5">
+                    <p className="line-clamp-2 text-sm font-bold leading-tight">
+                      {item.manga?.title || "Unknown Manga"}
+                    </p>
+                    <p className="mt-0.5 line-clamp-1 text-[11px] font-medium leading-normal text-text-sub-light dark:text-text-sub-dark">
+                      {item.manga?.author || "Unknown Author"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-text-sub-light dark:text-text-sub-dark">
+                      Ch. {item.current_chapter}
+                      {item.manga?.total_chapters
+                        ? ` / ${item.manga.total_chapters}`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination controls similar to Discover */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-4">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-light text-text-main-light shadow-sm disabled:opacity-50 dark:bg-surface-dark dark:text-text-main-dark"
+                >
+                  <span className="material-symbols-outlined">
+                    arrow_back_ios
+                  </span>
+                </button>
+                <span className="text-sm font-medium">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-light text-text-main-light shadow-sm disabled:opacity-50 dark:bg-surface-dark dark:text-text-main-dark"
+                >
+                  <span className="material-symbols-outlined">
+                    arrow_forward_ios
+                  </span>
+                </button>
               </div>
-            </section>
-          )}
+            )}
+          </section>
         </>
       )}
 

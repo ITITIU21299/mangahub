@@ -273,15 +273,6 @@ export default function DiscoverPage() {
         <h2 className="flex-1 text-3xl font-bold leading-tight tracking-tight">
           Discover
         </h2>
-        <button className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-light shadow-sm ring-1 ring-black/5 dark:bg-surface-dark dark:ring-white/10">
-          <div
-            className="h-full w-full bg-cover bg-center"
-            style={{
-              backgroundImage:
-                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDyvF4nlb0yARpGLfYqMnx4Tn2ke4BKDGXKAHd2JHbCh8aTERDO5a82iS0653MoTrriyrPjnymxZa_ll9ZBL07diWnDFalt7o1ZE8dm-qTSJ6wWnJB89LBv8zaGkdqY8OoeoxmL_YEsnS8w5BGNo4WOWTBDQbgbcAidNtOFI5T7rj_1H1P2T9VywB9NLnkYVG3XdUrnsbfVmRncZWs-Z35KEY3onJeTvclYVN5pxGaTPfTukX8pThu71cL55sQdvzRWnKEYAqguJuE')",
-            }}
-          />
-        </button>
       </header>
 
       {/* Search Bar */}
@@ -461,9 +452,11 @@ export default function DiscoverPage() {
             </h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-4">
-              {mangas.map((manga) => (
+              {mangas.map((manga, index) => (
                 <div
-                  key={manga.id}
+                  // Use index suffix to avoid duplicate keys when the same manga appears
+                  // multiple times in combined MangaDex results.
+                  key={`${manga.id}-${index}`}
                   onClick={() => handleMangaClick(manga.id)}
                   className="group flex cursor-pointer flex-col gap-2"
                 >

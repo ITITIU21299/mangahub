@@ -71,8 +71,13 @@ export default function MangaDetailsPage() {
     try {
       const token = localStorage.getItem("mangahub_token");
 
+      // If the id is prefixed with "mangadex-", strip it before calling MangaDex.
+      const mangadexId = mangaId.startsWith("mangadex-")
+        ? mangaId.replace("mangadex-", "")
+        : mangaId;
+
       // Try MangaDex API first
-      let res = await fetch(`${MANGADEX_API}/manga/${mangaId}`);
+      let res = await fetch(`${MANGADEX_API}/manga/${mangadexId}`);
 
       let mangaData: Manga | null = null;
       let progressData: UserProgress | null = null;

@@ -468,6 +468,18 @@ export default function ChatPage() {
                 );
               }
 
+              if (msg.type === "join" || msg.type === "leave") {
+                const verb = msg.type === "join" ? "has joined" : "has left";
+                return (
+                  <div
+                    key={idx}
+                    className="flex justify-center text-xs text-text-sub-light dark:text-text-sub-dark"
+                  >
+                    {msg.username} {verb} ({formatTime(msg.timestamp)})
+                  </div>
+                );
+              }
+
               return (
                 <div key={idx} className="flex flex-col gap-1">
                   <div className="flex items-center gap-2 text-xs text-text-sub-light dark:text-text-sub-dark">

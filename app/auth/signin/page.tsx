@@ -168,7 +168,13 @@ export default function SignInPage() {
                   <div className="w-full border-t border-neutral-light dark:border-neutral-700" />
                 </div>
                 <span className="relative bg-white px-4 text-sm text-neutral-medium dark:bg-[#1a1a0b]">
-                  Or continue with
+                  Or continue as{" "}
+                  <a
+                    href="/discover"
+                    className="font-semibold text-primary underline decoration-primary/60 underline-offset-4 hover:opacity-80"
+                  >
+                    guest
+                  </a>
                 </span>
               </div>
             </div>

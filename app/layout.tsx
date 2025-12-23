@@ -22,6 +22,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeInitScript = `(function(){try{var s=localStorage.getItem('mangahub_theme');var p=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s|| (p?'dark':'light');if(t==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`;
   return (
     <html lang="en">
       <head>
@@ -29,6 +30,7 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

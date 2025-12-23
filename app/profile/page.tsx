@@ -176,23 +176,6 @@ export default function ProfilePage() {
               chevron_right
             </span>
           </a>
-
-          <div className="flex items-center gap-4 rounded-xl bg-surface-light p-4 shadow-sm ring-1 ring-black/5 transition-colors hover:bg-gray-100 dark:bg-surface-dark dark:ring-white/10 dark:hover:bg-gray-800">
-            <span className="material-symbols-outlined text-2xl text-text-main-light dark:text-text-main-dark">
-              settings
-            </span>
-            <div className="flex-1">
-              <p className="font-semibold text-text-main-light dark:text-text-main-dark">
-                Settings
-              </p>
-              <p className="text-xs text-text-sub-light dark:text-text-sub-dark">
-                App preferences
-              </p>
-            </div>
-            <span className="material-symbols-outlined text-text-sub-light dark:text-text-sub-dark">
-              chevron_right
-            </span>
-          </div>
         </div>
 
         {/* Logout Button */}

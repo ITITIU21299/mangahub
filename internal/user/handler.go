@@ -32,6 +32,7 @@ func RegisterRoutes(r *gin.RouterGroup, svc *Service) {
 
 	r.POST("/users/library", h.HandleAddToLibrary)
 	r.GET("/users/library", h.HandleGetLibrary)
+	r.DELETE("/users/library/:manga_id", h.HandleRemoveFromLibrary)
 	r.PUT("/users/progress", h.HandleUpdateProgress)
 	r.POST("/users/notifications", h.HandleSubscribeNotifications)
 	r.GET("/users/notifications/:manga_id", h.HandleCheckNotificationSubscription)
@@ -57,8 +58,8 @@ func (h *Handler) HandleAddToLibrary(c *gin.Context) {
 	if err != nil {
 		// UC-005 Alternative Flow A2: Database error - show retry option
 		errorMsg := err.Error()
-		if errorMsg == "database_error: failed to check library entry" || 
-		   errorMsg == "database_error: failed to save library entry" {
+		if errorMsg == "database_error: failed to check library entry" ||
+			errorMsg == "database_error: failed to save library entry" {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Database error. Please try again.",
 				"type":  "database_error",
@@ -79,7 +80,7 @@ func (h *Handler) HandleAddToLibrary(c *gin.Context) {
 		"message": "Manga added to library successfully",
 		"status":  result.Status,
 	}
-	
+
 	// UC-005 Alternative Flow A1: Manga already in library
 	if result.Status == "already_exists" {
 		response["message"] = "Manga already in library. Progress updated successfully!"
@@ -98,6 +99,45 @@ func (h *Handler) HandleGetLibrary(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, items)
+}
+
+// HandleRemoveFromLibrary removes a manga from the user's library.
+func (h *Handler) HandleRemoveFromLibrary(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	mangaID := c.Param("manga_id")
+	if err := h.Service.RemoveFromLibrary(userID, mangaID); err != nil {
+		errorMsg := err.Error()
+		if errorMsg == "database_error: failed to remove library entry" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Database error. Please try again.",
+				"type":  "database_error",
+				"retry": true,
+			})
+			return
+		}
+		if errorMsg == "validation_error: user_id and manga_id are required" {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errorMsg,
+				"type":  "validation_error",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to remove from library. Please try again.",
+			"type":  "unknown_error",
+			"retry": true,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Manga removed from library successfully",
+	})
 }
 
 // HandleUpdateProgress implements UC-006: update reading progress.
@@ -126,7 +166,7 @@ func (h *Handler) HandleUpdateProgress(c *gin.Context) {
 	result, err := h.Service.UpdateProgress(userID, updateReq)
 	if err != nil {
 		errorMsg := err.Error()
-		
+
 		// UC-006 Alternative Flow A1: Invalid chapter number - show validation error
 		if errorMsg == "validation_error: chapter number cannot be negative" ||
 			errorMsg == "validation_error: chapter number exceeds total chapters" ||

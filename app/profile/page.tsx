@@ -17,6 +17,9 @@ export default function ProfilePage() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [libraryCount, setLibraryCount] = useState(0);
+  const [readingCount, setReadingCount] = useState(0);
+  const [plannedCount, setPlannedCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem("mangahub_token");
@@ -55,11 +58,36 @@ export default function ProfilePage() {
 
       if (res.ok) {
         const data = await res.json();
-        setLibraryCount(Array.isArray(data) ? data.length : 0);
+        if (Array.isArray(data)) {
+          setLibraryCount(data.length);
+          const reading = data.filter(
+            (item: { status?: string }) =>
+              item.status && item.status.toLowerCase() === "reading"
+          ).length;
+          const planned = data.filter(
+            (item: { status?: string }) =>
+              item.status && item.status.toLowerCase() === "plan to read"
+          ).length;
+          const completed = data.filter(
+            (item: { status?: string }) =>
+              item.status && item.status.toLowerCase() === "completed"
+          ).length;
+          setReadingCount(reading);
+          setPlannedCount(planned);
+          setCompletedCount(completed);
+        } else {
+          setLibraryCount(0);
+          setReadingCount(0);
+          setPlannedCount(0);
+          setCompletedCount(0);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch library count:", err);
       setLibraryCount(0);
+      setReadingCount(0);
+      setPlannedCount(0);
+      setCompletedCount(0);
     }
   };
 
@@ -114,7 +142,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Stats Card */}
-        <div className="mb-6 grid grid-cols-2 gap-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="rounded-xl bg-surface-light p-4 shadow-sm ring-1 ring-black/5 dark:bg-surface-dark dark:ring-white/10">
             <p className="text-sm font-medium text-text-sub-light dark:text-text-sub-dark">
               Library
@@ -128,9 +156,27 @@ export default function ProfilePage() {
             <p className="text-sm font-medium text-text-sub-light dark:text-text-sub-dark">
               Reading
             </p>
-            <p className="mt-1 text-2xl font-bold">-</p>
+            <p className="mt-1 text-2xl font-bold">{readingCount}</p>
             <p className="mt-0.5 text-xs text-text-sub-light dark:text-text-sub-dark">
               Active
+            </p>
+          </div>
+          <div className="rounded-xl bg-surface-light p-4 shadow-sm ring-1 ring-black/5 dark:bg-surface-dark dark:ring-white/10">
+            <p className="text-sm font-medium text-text-sub-light dark:text-text-sub-dark">
+              Plan to Read
+            </p>
+            <p className="mt-1 text-2xl font-bold">{plannedCount}</p>
+            <p className="mt-0.5 text-xs text-text-sub-light dark:text-text-sub-dark">
+              Backlog
+            </p>
+          </div>
+          <div className="rounded-xl bg-surface-light p-4 shadow-sm ring-1 ring-black/5 dark:bg-surface-dark dark:ring-white/10">
+            <p className="text-sm font-medium text-text-sub-light dark:text-text-sub-dark">
+              Completed
+            </p>
+            <p className="mt-1 text-2xl font-bold">{completedCount}</p>
+            <p className="mt-0.5 text-xs text-text-sub-light dark:text-text-sub-dark">
+              Finished
             </p>
           </div>
         </div>

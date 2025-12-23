@@ -13,7 +13,7 @@ import (
 // Service contains user library management logic.
 type Service struct {
 	DB       *sql.DB
-	TCPAddr  string      // TCP server address for broadcasting progress updates
+	TCPAddr  string       // TCP server address for broadcasting progress updates
 	MangaSvc MangaService // Interface to get manga metadata for validation
 }
 
@@ -212,6 +212,24 @@ func (s *Service) GetLibrary(userID string) ([]models.UserProgress, error) {
 	return items, nil
 }
 
+// RemoveFromLibrary deletes a manga from the user's library.
+func (s *Service) RemoveFromLibrary(userID, mangaID string) error {
+	if userID == "" || mangaID == "" {
+		return errors.New("validation_error: user_id and manga_id are required")
+	}
+
+	_, err := s.DB.Exec(
+		`DELETE FROM user_progress WHERE user_id = ? AND manga_id = ?`,
+		userID, mangaID,
+	)
+	if err != nil {
+		log.Printf("Error removing from library: %v", err)
+		return errors.New("database_error: failed to remove library entry")
+	}
+
+	return nil
+}
+
 // UpdateProgressRequest represents a request to update reading progress.
 type UpdateProgressRequest struct {
 	MangaID        string
@@ -221,7 +239,7 @@ type UpdateProgressRequest struct {
 
 // UpdateProgressResult represents the result of updating progress (UC-006).
 type UpdateProgressResult struct {
-	BroadcastSent bool   // Whether TCP broadcast was successfully sent
+	BroadcastSent  bool   // Whether TCP broadcast was successfully sent
 	BroadcastError string // Error message if broadcast failed (for queuing)
 }
 
@@ -290,7 +308,7 @@ func (s *Service) UpdateProgress(userID string, req UpdateProgressRequest) (*Upd
 	}
 
 	broadcastResult := &UpdateProgressResult{
-		BroadcastSent: false,
+		BroadcastSent:  false,
 		BroadcastError: "",
 	}
 

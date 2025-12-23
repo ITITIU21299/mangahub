@@ -78,6 +78,7 @@ export default function MangaDetailsPage() {
 
       let mangaData: Manga | null = null;
       let progressData: UserProgress | null = null;
+      let subscribed = false;
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -107,9 +108,29 @@ export default function MangaDetailsPage() {
             const library: UserProgress[] | null = await progressRes
               .json()
               .catch(() => null);
-            if (library && Array.isArray(library)) {
-              const progress = library.find((p) => p.manga_id === mangaId);
+            if (library && Array.isArray(library) && mangaData) {
+              const progress = library.find((p) => p.manga_id === mangaData.id);
               progressData = progress || null;
+            }
+          }
+
+          // Check notification subscription status for this manga
+          if (mangaData) {
+            const notifRes = await fetch(
+              `${LOCAL_API_BASE}/users/notifications/${mangaData.id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                signal: controller.signal,
+              }
+            ).catch(() => null);
+
+            if (notifRes && notifRes.ok) {
+              const notifJson: { subscribed?: boolean } | null = await notifRes
+                .json()
+                .catch(() => null);
+              subscribed = !!notifJson?.subscribed;
             }
           }
         } catch (err) {
@@ -132,6 +153,7 @@ export default function MangaDetailsPage() {
       if (mangaData) {
         setManga(mangaData);
         setUserProgress(progressData);
+        setNotificationsEnabled(subscribed);
         if (progressData) {
           setCurrentChapter(progressData.current_chapter);
           setSelectedStatus(progressData.status);
@@ -277,6 +299,57 @@ export default function MangaDetailsPage() {
     } catch (err) {
       setActionError(
         "Network error: Unable to update progress. Please check your connection and try again."
+      );
+      setCanRetry(true);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemoveFromLibrary = async () => {
+    if (!manga) return;
+
+    setActionLoading(true);
+    setActionError(null);
+    setSuccessMessage(null);
+    setCanRetry(false);
+
+    try {
+      const token = localStorage.getItem("mangahub_token");
+      if (!token) {
+        router.push("/auth/signin");
+        return;
+      }
+
+      const res = await fetch(`${LOCAL_API_BASE}/users/library/${manga.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setActionError(data.error || "Failed to remove from library");
+        setCanRetry(data.retry === true);
+        return;
+      }
+
+      setSuccessMessage(
+        data.message || "Manga removed from library successfully"
+      );
+
+      setTimeout(() => {
+        setSuccessMessage(null);
+        setUserProgress(null);
+        setCurrentChapter(0);
+        setSelectedStatus("Reading");
+        fetchMangaDetails();
+      }, 1500);
+    } catch (err) {
+      setActionError(
+        "Network error. Please check your connection and try again."
       );
       setCanRetry(true);
     } finally {
@@ -462,7 +535,7 @@ export default function MangaDetailsPage() {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {!userProgress ? (
                 <button
                   onClick={() => setShowAddModal(true)}
@@ -471,16 +544,25 @@ export default function MangaDetailsPage() {
                   Add to Library
                 </button>
               ) : (
-                <button
-                  onClick={() => {
-                    setCurrentChapter(userProgress.current_chapter);
-                    setSelectedStatus(userProgress.status);
-                    setShowUpdateModal(true);
-                  }}
-                  className="flex-1 rounded-full bg-primary px-4 py-3 text-sm font-bold text-black shadow-sm transition-all hover:shadow-md active:scale-95"
-                >
-                  Update Progress
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      setCurrentChapter(userProgress.current_chapter);
+                      setSelectedStatus(userProgress.status);
+                      setShowUpdateModal(true);
+                    }}
+                    className="flex-1 rounded-full bg-primary px-4 py-3 text-sm font-bold text-black shadow-sm transition-all hover:shadow-md active:scale-95"
+                  >
+                    Update Progress
+                  </button>
+                  <button
+                    onClick={handleRemoveFromLibrary}
+                    disabled={actionLoading}
+                    className="flex-1 rounded-full bg-red-500 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-red-600 active:scale-95 disabled:opacity-60"
+                  >
+                    {actionLoading ? "Removing..." : "Remove from Library"}
+                  </button>
+                </>
               )}
               <button
                 onClick={handleToggleNotifications}

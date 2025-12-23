@@ -1,30 +1,41 @@
 package main
 
-// This file intentionally keeps the gRPC server minimal.
-// You can add .proto definitions under a proto/ directory and generate
-// Go code with protoc, then implement MangaService here.
-
 import (
-	"fmt"
 	"log"
-	"net"
+	"os"
 
-	"google.golang.org/grpc"
+	"mangahub/internal/database"
+	"mangahub/internal/grpc"
+	"mangahub/internal/manga"
+	"mangahub/internal/user"
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":9092")
+	// Initialize database
+	dbPath := os.Getenv("MANGAHUB_DB_PATH")
+	if dbPath == "" {
+		dbPath = "mangahub.db"
+	}
+
+	db, err := database.Init(dbPath)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatal("init db:", err)
+	}
+	defer db.Close()
+
+	// Initialize services
+	mangaSvc := manga.NewService(db)
+	userSvc := user.NewService(db)
+	userSvc.SetMangaService(mangaSvc) // Set manga service for validation
+
+	// Create and start gRPC server
+	grpcAddr := os.Getenv("MANGAHUB_GRPC_ADDR")
+	if grpcAddr == "" {
+		grpcAddr = ":9092"
 	}
 
-	grpcServer := grpc.NewServer()
-	// TODO: register your generated MangaService server implementation here.
-
-	fmt.Println("gRPC server listening on :9092")
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	server := grpc.NewServer(mangaSvc, userSvc)
+	log.Fatal(server.Start(grpcAddr))
 }
 
 

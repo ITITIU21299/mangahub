@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import BottomNav from "@/components/BottomNav";
 
 type ChatMessageType =
   | "chat"
@@ -513,42 +514,7 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <nav className="pb-safe fixed bottom-0 left-0 z-50 w-full border-t border-gray-100 bg-surface-light/95 backdrop-blur-lg pt-2 dark:border-gray-800 dark:bg-surface-dark/95">
-        <div className="flex h-16 items-center justify-around px-2">
-          <Link
-            href="/"
-            className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
-          >
-            <span className="material-symbols-outlined">home</span>
-            <span className="text-[10px] font-medium">Home</span>
-          </Link>
-          <Link
-            href="/library"
-            className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
-          >
-            <span className="material-symbols-outlined">library_books</span>
-            <span className="text-[10px] font-medium">Library</span>
-          </Link>
-          <Link
-            href="/discover"
-            className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
-          >
-            <span className="material-symbols-outlined">search</span>
-            <span className="text-[10px] font-medium">Search</span>
-          </Link>
-          <div className="flex flex-1 flex-col items-center gap-1 p-2 text-text-main-light dark:text-text-main-dark">
-            <div className="flex flex-col items-center rounded-full bg-primary/20 px-4 py-0.5 dark:bg-primary/10">
-              <span className="material-symbols-outlined text-black dark:text-primary">
-                chat
-              </span>
-            </div>
-            <span className="text-[10px] font-bold text-black dark:text-primary">
-              Chat
-            </span>
-          </div>
-        </div>
-      </nav>
+      <BottomNav active="chat" />
     </div>
   );
 }

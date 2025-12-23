@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import BottomNav from "@/components/BottomNav";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
@@ -205,49 +206,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Bottom Navigation */}
-      <nav className="pb-safe fixed bottom-0 z-30 w-full border-t border-black/5 bg-surface-light/80 backdrop-blur-lg dark:border-white/5 dark:bg-background-dark/80">
-        <div className="flex h-20 items-center justify-around px-2 pb-2">
-          <a
-            href="/"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">home</span>
-            <span className="text-[10px] font-medium">Home</span>
-          </a>
-          <a
-            href="/discover"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">
-              explore
-            </span>
-            <span className="text-[10px] font-medium">Discover</span>
-          </a>
-          <a
-            href="/library"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">
-              collections_bookmark
-            </span>
-            <span className="text-[10px] font-medium">Library</span>
-          </a>
-          <a
-            href="/profile"
-            className="relative flex h-full w-full flex-col items-center justify-center gap-1 text-text-main-light dark:text-white"
-          >
-            <div className="mb-1 flex items-center justify-center rounded-full bg-primary/20 px-5 py-1 dark:bg-primary/10">
-              <span
-                className="material-symbols-outlined text-[26px] font-bold text-black dark:text-primary"
-                style={{ fontVariationSettings: '"FILL" 1' }}
-              >
-                person
-              </span>
-            </div>
-            <span className="text-[10px] font-bold">Profile</span>
-          </a>
-        </div>
-      </nav>
+      <BottomNav active="profile" />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import BottomNav from "@/components/BottomNav";
 
 const LOCAL_API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
@@ -282,7 +283,9 @@ export default function LibraryPage() {
                   <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg bg-gray-200 dark:bg-gray-800">
                     {item.manga?.cover_url ? (
                       <img
-                        src={item.manga.cover_url}
+                        src={`${LOCAL_API_BASE}/proxy/cover?url=${encodeURIComponent(
+                          item.manga.cover_url
+                        )}`}
                         alt={item.manga.title}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
@@ -356,50 +359,7 @@ export default function LibraryPage() {
         </>
       )}
 
-      {/* Floating Action Button - Navigate to Discover */}
-      {/* Bottom Navigation */}
-      <nav className="pb-safe fixed bottom-0 left-0 z-50 w-full border-t border-gray-100 bg-surface-light/95 backdrop-blur-lg pt-2 dark:border-gray-800 dark:bg-surface-dark/95">
-        <div className="flex h-16 items-center justify-around px-2">
-          <a
-            href="/"
-            className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
-          >
-            <span className="material-symbols-outlined">home</span>
-            <span className="text-[10px] font-medium">Home</span>
-          </a>
-          <div className="flex flex-1 flex-col items-center gap-1 p-2 text-text-main-light dark:text-text-main-dark">
-            <div className="flex flex-col items-center rounded-full bg-primary/20 px-4 py-0.5 dark:bg-primary/10">
-              <span className="material-symbols-outlined text-black dark:text-primary">
-                library_books
-              </span>
-            </div>
-            <span className="text-[10px] font-bold text-black dark:text-primary">
-              Library
-            </span>
-          </div>
-          <a
-            href="/discover"
-            className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
-          >
-            <span className="material-symbols-outlined">search</span>
-            <span className="text-[10px] font-medium">Search</span>
-          </a>
-          <a
-            href="/chat"
-            className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
-          >
-            <span className="material-symbols-outlined">chat</span>
-            <span className="text-[10px] font-medium">Chat</span>
-          </a>
-          <a
-            href="/profile"
-            className="flex flex-1 flex-col items-center gap-1 p-2 text-text-sub-light transition-colors hover:text-primary dark:text-text-sub-dark"
-          >
-            <span className="material-symbols-outlined">person</span>
-            <span className="text-[10px] font-medium">Profile</span>
-          </a>
-        </div>
-      </nav>
+      <BottomNav active="library" />
     </div>
   );
 }

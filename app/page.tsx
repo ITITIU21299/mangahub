@@ -1,12 +1,10 @@
+import BottomNav from "@/components/BottomNav";
+
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background-light text-text-main-light dark:bg-background-dark dark:text-text-main-dark">
       <div className="mx-auto flex max-w-md flex-col items-center gap-6 px-6 text-center">
         <h1 className="text-3xl font-bold tracking-tight">MangaHub</h1>
-        <p className="text-sm text-text-sub-light dark:text-text-sub-dark">
-          Simple manga tracking demo for your Net Centric project. Use the links
-          below to explore the sample UI screens.
-        </p>
         <div className="flex w-full flex-col gap-3">
           <a
             href="/discover"
@@ -34,6 +32,8 @@ export default function Home() {
           </a>
         </div>
       </div>
+
+      <BottomNav active="home" />
     </div>
   );
 }

@@ -2,11 +2,10 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import BottomNav from "@/components/BottomNav";
 
-// Use Next.js API route that proxies to MangaDex, with fallback to local API
-const MANGADEX_API = "/api/mangadex";
-const LOCAL_API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+// Use Go HTTP API server directly
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 interface Manga {
   id: string;
@@ -55,11 +54,11 @@ export default function DiscoverPage() {
 
   const statuses = ["All", "Ongoing", "Completed", "Hiatus"];
 
-  // Fetch genres from MangaDex API on component mount
+  // Fetch genres from MangaDex API on component mount (keep using Next.js proxy for genres)
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const res = await fetch(`${MANGADEX_API}/tags`);
+        const res = await fetch("/api/mangadex/tags");
         if (res.ok) {
           const data = await res.json();
           if (
@@ -127,9 +126,19 @@ export default function DiscoverPage() {
     setError(null);
 
     try {
+      // Get auth token (required for Go API)
+      const token = localStorage.getItem("mangahub_token");
+      if (!token) {
+        setError("Please sign in to access manga");
+        setMangas([]);
+        setLoading(false);
+        return;
+      }
+
+      // Build params for Go HTTP API
       const params = new URLSearchParams();
       if (searchQuery.trim()) {
-        params.append("query", searchQuery.trim()); // Changed to "query" to support both title and author
+        params.append("q", searchQuery.trim()); // Go API uses "q" not "query"
       }
       if (selectedGenre && selectedGenre !== "All") {
         params.append("genre", selectedGenre);
@@ -137,128 +146,76 @@ export default function DiscoverPage() {
       if (selectedStatus && selectedStatus !== "All") {
         params.append("status", selectedStatus);
       }
-      const limit = 20;
-      const offset = (page - 1) * limit;
-      params.append("limit", limit.toString());
-      params.append("offset", offset.toString());
+      params.append("page", page.toString());
+      params.append("limit", "20");
 
-      // Try MangaDex API first
-      let res = await fetch(`${MANGADEX_API}/search?${params.toString()}`);
+      // Call Go HTTP API directly
+      const res = await fetch(`${API_BASE}/manga?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      // If MangaDex fails, fallback to local API
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        const isNetworkError =
-          res.status === 500 &&
-          (errorData.error?.includes("Unable to connect") ||
-            errorData.error?.includes("ECONNREFUSED") ||
-            errorData.error?.includes("fetch failed"));
-
-        if (isNetworkError) {
-          console.log(
-            "[Discover] MangaDex unavailable, falling back to local API"
-          );
-
-          // Fallback to local Go API
-          const token = localStorage.getItem("mangahub_token");
-          if (!token) {
-            setError("Please sign in to access manga library");
-            setMangas([]);
-            return;
-          }
-
-          // Build params for local API (different format)
-          const localParams = new URLSearchParams();
-          if (searchQuery.trim()) {
-            localParams.append("q", searchQuery.trim());
-          }
-          if (selectedGenre && selectedGenre !== "All") {
-            localParams.append("genre", selectedGenre);
-          }
-          if (selectedStatus && selectedStatus !== "All") {
-            localParams.append("status", selectedStatus);
-          }
-          localParams.append("page", page.toString());
-          localParams.append("limit", limit.toString());
-
-          res = await fetch(
-            `${LOCAL_API_BASE}/manga?${localParams.toString()}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (!res.ok) {
-            const localError = await res.json().catch(() => ({}));
-            setError(localError.error || "Failed to load manga");
-            setMangas([]);
-            return;
-          }
-
-          const localData: SearchResponse = await res.json();
-          setMangas(localData.data || []);
-          setPagination(localData.pagination || pagination);
-          return;
-        } else {
-          // MangaDex returned an error but it's not a network issue
-          setError(errorData.error || "Failed to load manga from MangaDex");
-          setMangas([]);
-          return;
-        }
+        setError(errorData.error || "Failed to load manga");
+        setMangas([]);
+        return;
       }
 
-      // MangaDex succeeded
-      const data: SearchResponse = await res.json();
-      setMangas(data.data || []);
-      setPagination(data.pagination || pagination);
+      // Parse response - Go API returns { data: [...], pagination: {...} }
+      const response = await res.json();
+      console.log("[Discover] API Response:", response); // Debug log
+      console.log("[Discover] Data length:", response.data?.length || 0); // Debug log
+
+      if (!response.data || response.data.length === 0) {
+        // Check if this is a filter/search query or just browsing all
+        const hasFilter =
+          searchQuery.trim() ||
+          (selectedGenre && selectedGenre !== "All") ||
+          (selectedStatus && selectedStatus !== "All");
+
+        if (hasFilter) {
+          setError(
+            `No manga found matching your search${
+              searchQuery ? ` "${searchQuery}"` : ""
+            }${
+              selectedGenre && selectedGenre !== "All"
+                ? ` in genre "${selectedGenre}"`
+                : ""
+            }${
+              selectedStatus && selectedStatus !== "All"
+                ? ` with status "${selectedStatus}"`
+                : ""
+            }. Try different filters or search terms.`
+          );
+        } else {
+          setError(
+            "No manga found. The database may be empty. Please run the seed script: go run ./cmd/seed"
+          );
+        }
+        setMangas([]);
+        return;
+      }
+
+      setMangas(response.data || []);
+
+      // Map Go API pagination format to frontend format
+      if (response.pagination) {
+        setPagination({
+          page: response.pagination.page || page,
+          limit: response.pagination.limit || 20,
+          total: response.pagination.total || 0,
+          total_pages: response.pagination.total_pages || 0,
+        });
+      }
     } catch (err) {
       console.error("Error fetching manga:", err);
-
-      // Try fallback to local API on any error
-      try {
-        const token = localStorage.getItem("mangahub_token");
-        if (token) {
-          console.log(
-            "[Discover] Error with MangaDex, trying local API fallback"
-          );
-          const localParams = new URLSearchParams();
-          if (searchQuery.trim()) {
-            localParams.append("q", searchQuery.trim());
-          }
-          if (selectedGenre && selectedGenre !== "All") {
-            localParams.append("genre", selectedGenre);
-          }
-          if (selectedStatus && selectedStatus !== "All") {
-            localParams.append("status", selectedStatus);
-          }
-          localParams.append("page", page.toString());
-          localParams.append("limit", "20");
-
-          const localRes = await fetch(
-            `${LOCAL_API_BASE}/manga?${localParams.toString()}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (localRes.ok) {
-            const localData: SearchResponse = await localRes.json();
-            setMangas(localData.data || []);
-            setPagination(localData.pagination || pagination);
-            return;
-          }
-        }
-      } catch (fallbackErr) {
-        console.error("Fallback also failed:", fallbackErr);
-      }
-
-      setError(
-        "Unable to fetch manga. Please check your connection and try again."
-      );
+      const errorMessage =
+        err instanceof Error
+          ? `Unable to fetch manga: ${err.message}. Please check your connection and ensure the API server is running on ${API_BASE}`
+          : "Unable to fetch manga. Please check your connection and try again.";
+      setError(errorMessage);
       setMangas([]);
     } finally {
       setLoading(false);
@@ -513,7 +470,9 @@ export default function DiscoverPage() {
                   <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg">
                     {manga.cover_url ? (
                       <img
-                        src={manga.cover_url}
+                        src={`${API_BASE}/proxy/cover?url=${encodeURIComponent(
+                          manga.cover_url
+                        )}`}
                         alt={manga.title}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
@@ -571,50 +530,7 @@ export default function DiscoverPage() {
         )}
       </div>
 
-      {/* Bottom Navigation */}
-      <nav className="pb-safe fixed bottom-0 z-30 w-full border-t border-black/5 bg-surface-light/80 backdrop-blur-lg dark:border-white/5 dark:bg-background-dark/80">
-        <div className="flex h-20 items-center justify-around px-2 pb-2">
-          <a
-            href="/"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">home</span>
-            <span className="text-[10px] font-medium">Home</span>
-          </a>
-          <a
-            href="/discover"
-            className="relative flex h-full w-full flex-col items-center justify-center gap-1 text-text-main-light dark:text-white"
-          >
-            <div className="mb-1 flex items-center justify-center rounded-full bg-primary/20 px-5 py-1 dark:bg-primary/10">
-              <span
-                className="material-symbols-outlined text-[26px] font-bold text-black dark:text-primary"
-                style={{ fontVariationSettings: '"FILL" 1' }}
-              >
-                explore
-              </span>
-            </div>
-            <span className="text-[10px] font-bold">Discover</span>
-          </a>
-          <a
-            href="/library"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">
-              collections_bookmark
-            </span>
-            <span className="text-[10px] font-medium">Library</span>
-          </a>
-          <a
-            href="/profile"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">
-              person
-            </span>
-            <span className="text-[10px] font-medium">Profile</span>
-          </a>
-        </div>
-      </nav>
+      <BottomNav active="discover" />
     </div>
   );
 }

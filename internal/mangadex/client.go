@@ -1,0 +1,223 @@
+package mangadex
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	"mangahub/pkg/models"
+)
+
+const MANGADEX_BASE = "https://api.mangadex.org"
+
+// Client handles MangaDex API requests
+type Client struct {
+	httpClient *http.Client
+	baseURL    string
+}
+
+// NewClient creates a new MangaDex client
+func NewClient() *Client {
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+		baseURL: MANGADEX_BASE,
+	}
+}
+
+// MangaDexManga represents a manga from MangaDex API
+type MangaDexManga struct {
+	ID         string `json:"id"`
+	Type       string `json:"type"`
+	Attributes struct {
+		Title       map[string]string `json:"title"`
+		Description map[string]string `json:"description"`
+		Status      string            `json:"status"`
+		LastChapter string            `json:"lastChapter"`
+		Tags        []struct {
+			Attributes struct {
+				Name map[string]string `json:"name"`
+			} `json:"attributes"`
+		} `json:"tags"`
+	} `json:"attributes"`
+	Relationships []struct {
+		Type       string `json:"type"`
+		Attributes struct {
+			FileName string `json:"fileName"`
+			Name     string `json:"name"`
+		} `json:"attributes,omitempty"`
+	} `json:"relationships"`
+}
+
+// MangaDexResponse represents the MangaDex API response
+type MangaDexResponse struct {
+	Result   string         `json:"result"`
+	Response string         `json:"response"`
+	Data     []MangaDexManga `json:"data"`
+	Total    int            `json:"total"`
+	Limit    int            `json:"limit"`
+	Offset   int            `json:"offset"`
+}
+
+// SearchManga searches MangaDex for manga
+func (c *Client) SearchManga(query, genre, status string, limit, offset int) (*MangaDexResponse, error) {
+	params := url.Values{}
+	params.Add("limit", fmt.Sprintf("%d", limit))
+	params.Add("offset", fmt.Sprintf("%d", offset))
+	params.Add("includes[]", "cover_art")
+	params.Add("includes[]", "author")
+	params.Add("includes[]", "artist")
+	params.Add("contentRating[]", "safe")
+	params.Add("contentRating[]", "suggestive")
+	params.Add("contentRating[]", "erotica")
+
+	if query != "" {
+		params.Add("title", query)
+	}
+
+	// Note: MangaDex doesn't accept genre names directly - it requires tag IDs
+	// We'll fetch manga and filter by genre client-side (see searchMangaDexAndCache)
+	// Don't add tags[] parameter here - it causes 400 errors
+
+	if status != "" {
+		// Map status: Ongoing -> ongoing, Completed -> completed, Hiatus -> hiatus
+		mappedStatus := strings.ToLower(status)
+		if mappedStatus == "ongoing" || mappedStatus == "completed" || mappedStatus == "hiatus" {
+			params.Add("status[]", mappedStatus)
+		}
+	}
+
+	reqURL := fmt.Sprintf("%s/manga?%s", c.baseURL, params.Encode())
+	
+	log.Printf("[MangaDex] Fetching: %s", reqURL)
+	
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("User-Agent", "MangaHub/1.0 (Net Centric Project)")
+	req.Header.Set("Accept", "application/json")
+
+	// Rate limiting: wait 200ms between requests
+	time.Sleep(200 * time.Millisecond)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("MangaDex API error: %d - %s", resp.StatusCode, string(body))
+	}
+
+	var result MangaDexResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	log.Printf("[MangaDex] Response: %d results, total: %d", len(result.Data), result.Total)
+	return &result, nil
+}
+
+// TransformMangaDexToManga converts MangaDex manga to our Manga model
+func TransformMangaDexToManga(md *MangaDexManga) *models.Manga {
+	if md == nil || md.Attributes.Title == nil {
+		return nil
+	}
+
+	// Get title (prefer English, fallback to first available)
+	title := ""
+	if en, ok := md.Attributes.Title["en"]; ok && en != "" {
+		title = en
+	} else {
+		for _, t := range md.Attributes.Title {
+			if t != "" {
+				title = t
+				break
+			}
+		}
+	}
+	if title == "" {
+		return nil
+	}
+
+	// Get description
+	description := ""
+	if desc, ok := md.Attributes.Description["en"]; ok {
+		description = desc
+	} else {
+		for _, d := range md.Attributes.Description {
+			if d != "" {
+				description = d
+				break
+			}
+		}
+	}
+
+	// Extract genres from tags
+	genres := []string{}
+	for _, tag := range md.Attributes.Tags {
+		if tag.Attributes.Name != nil {
+			if name, ok := tag.Attributes.Name["en"]; ok && name != "" {
+				genres = append(genres, name)
+			}
+		}
+	}
+
+	// Extract author and cover URL from relationships
+	author := "Unknown"
+	coverURL := ""
+	for _, rel := range md.Relationships {
+		if rel.Type == "author" || rel.Type == "artist" {
+			if rel.Attributes.Name != "" {
+				if author == "Unknown" {
+					author = rel.Attributes.Name
+				} else {
+					author += ", " + rel.Attributes.Name
+				}
+			}
+		}
+		if rel.Type == "cover_art" && rel.Attributes.FileName != "" {
+			// Use the raw cover filename exactly as MangaDex returns it.
+			// Example: https://uploads.mangadex.org/covers/{manga_id}/{fileName}
+			coverURL = fmt.Sprintf("https://uploads.mangadex.org/covers/%s/%s", md.ID, rel.Attributes.FileName)
+		}
+	}
+
+	// Parse total chapters from lastChapter
+	totalChapters := 0
+	if md.Attributes.LastChapter != "" {
+		// Try to parse as float (e.g., "1100.5" -> 1100)
+		var ch float64
+		if _, err := fmt.Sscanf(md.Attributes.LastChapter, "%f", &ch); err == nil {
+			totalChapters = int(ch)
+		}
+	}
+
+	// Map status
+	status := md.Attributes.Status
+	if status == "" {
+		status = "Unknown"
+	}
+
+	return &models.Manga{
+		ID:            "mangadex-" + md.ID, // Prefix to distinguish from local DB manga
+		Title:         title,
+		Author:        author,
+		Genres:        genres,
+		Status:        status,
+		TotalChapters: totalChapters,
+		Description:   description,
+		CoverURL:      coverURL,
+	}
+}
+

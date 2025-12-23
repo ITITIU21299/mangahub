@@ -21,8 +21,12 @@ type MangaData struct {
 }
 
 func main() {
-	// Open database
-	db, err := database.Init("mangahub.db")
+	// Open database - use same path as servers
+	dbPath := os.Getenv("MANGAHUB_DB_PATH")
+	if dbPath == "" {
+		dbPath = "mangahub.db" // In mangahub root directory
+	}
+	db, err := database.Init(dbPath)
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
@@ -78,4 +82,3 @@ func main() {
 
 	fmt.Printf("Successfully inserted %d manga entries into the database.\n", inserted)
 }
-

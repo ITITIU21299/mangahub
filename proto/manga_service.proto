@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package mangahub;
+
+option go_package = "mangahub/proto";
+
+// Manga represents a manga entry
+message Manga {
+  string id = 1;
+  string title = 2;
+  string author = 3;
+  repeated string genres = 4;
+  string status = 5;
+  int32 total_chapters = 6;
+  string description = 7;
+  string cover_url = 8;
+}
+
+// UserProgress represents user reading progress
+message UserProgress {
+  string user_id = 1;
+  string manga_id = 2;
+  int32 current_chapter = 3;
+  string status = 4;
+  int64 updated_at = 5;
+}
+
+// GetMangaRequest for UC-014: Retrieve Manga via gRPC
+message GetMangaRequest {
+  string manga_id = 1;
+}
+
+// GetMangaResponse for UC-014
+message GetMangaResponse {
+  Manga manga = 1;
+}
+
+// SearchMangaRequest for UC-015: Search Manga via gRPC
+message SearchMangaRequest {
+  string query = 1;      // Optional: search in title/author
+  string genre = 2;      // Optional: filter by genre
+  string status = 3;     // Optional: filter by status
+  int32 page = 4;        // Page number (default: 1)
+  int32 limit = 5;       // Results per page (default: 20)
+}
+
+// SearchMangaResponse for UC-015
+message SearchMangaResponse {
+  repeated Manga data = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 limit = 4;
+  int32 total_pages = 5;
+}
+
+// UpdateProgressRequest for UC-016: Update Progress via gRPC
+message UpdateProgressRequest {
+  string user_id = 1;
+  string manga_id = 2;
+  int32 current_chapter = 3;
+  string status = 4;     // Optional: "reading", "completed", "on_hold", etc.
+}
+
+// UpdateProgressResponse for UC-016
+message UpdateProgressResponse {
+  bool success = 1;
+  string message = 2;
+  bool broadcast_sent = 3;  // Whether TCP broadcast was sent
+}
+
+// MangaService provides internal gRPC methods for manga operations
+service MangaService {
+  // UC-014: Retrieve Manga via gRPC
+  rpc GetManga(GetMangaRequest) returns (GetMangaResponse);
+  
+  // UC-015: Search Manga via gRPC
+  rpc SearchManga(SearchMangaRequest) returns (SearchMangaResponse);
+  
+  // UC-016: Update Progress via gRPC
+  rpc UpdateProgress(UpdateProgressRequest) returns (UpdateProgressResponse);
+}
+

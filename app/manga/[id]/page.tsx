@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import BottomNav from "@/components/BottomNav";
 
 const MANGADEX_API = "/api/mangadex";
 const LOCAL_API_BASE =
@@ -407,7 +408,9 @@ export default function MangaDetailsPage() {
             <div className="relative aspect-[3/4] w-full max-w-[200px] overflow-hidden rounded-xl shadow-lg md:w-[200px]">
               {manga.cover_url ? (
                 <img
-                  src={manga.cover_url}
+                  src={`${LOCAL_API_BASE}/proxy/cover?url=${encodeURIComponent(
+                    manga.cover_url
+                  )}`}
                   alt={manga.title}
                   className="h-full w-full object-cover"
                   onError={(e) => {
@@ -735,44 +738,7 @@ export default function MangaDetailsPage() {
       )}
 
       {/* Bottom Navigation */}
-      <nav className="pb-safe fixed bottom-0 z-30 w-full border-t border-black/5 bg-surface-light/80 backdrop-blur-lg dark:border-white/5 dark:bg-background-dark/80">
-        <div className="flex h-20 items-center justify-around px-2 pb-2">
-          <a
-            href="/"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">home</span>
-            <span className="text-[10px] font-medium">Home</span>
-          </a>
-          <a
-            href="/discover"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">
-              explore
-            </span>
-            <span className="text-[10px] font-medium">Discover</span>
-          </a>
-          <a
-            href="/library"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">
-              collections_bookmark
-            </span>
-            <span className="text-[10px] font-medium">Library</span>
-          </a>
-          <a
-            href="/profile"
-            className="flex h-full w-full flex-col items-center justify-center gap-1 text-text-sub-light transition-colors hover:text-text-main-light dark:text-text-sub-dark dark:hover:text-white"
-          >
-            <span className="material-symbols-outlined text-[26px]">
-              person
-            </span>
-            <span className="text-[10px] font-medium">Profile</span>
-          </a>
-        </div>
-      </nav>
+      <BottomNav active="discover" />
     </div>
   );
 }

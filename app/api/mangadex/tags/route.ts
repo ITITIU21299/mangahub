@@ -54,7 +54,10 @@ async function rateLimitedFetch(url: string, retries = 3) {
 
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      const errorCode = (error as any)?.code;
+      const errorCode =
+        typeof (error as { code?: unknown }).code === "string"
+          ? (error as { code?: unknown }).code
+          : undefined;
 
       const isNetworkError =
         error instanceof TypeError ||
@@ -161,4 +164,3 @@ export async function GET() {
     );
   }
 }
-

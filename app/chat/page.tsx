@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 
 type ChatMessageType =
@@ -46,12 +45,6 @@ export default function ChatPage() {
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [selectedRoom, setSelectedRoom] = useState<string>("general");
   const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: "friends",
-      label: "Friends",
-      description: "Direct messages with friends",
-      type: "group",
-    },
     {
       id: "general",
       label: "#general",
@@ -274,27 +267,6 @@ export default function ChatPage() {
     return "Multiple users are typing...";
   }, [typingUsers, selectedRoom, activeName]);
 
-  const handleFindFriend = () => {
-    if (typeof window === "undefined") return;
-    const friendName = window.prompt("Enter friend's username:");
-    if (!friendName || friendName.trim() === activeName) return;
-    sendMessage(
-      "friend_request",
-      `Friend request from ${activeName}`,
-      friendName.trim()
-    );
-    setMessages((prev) => [
-      ...prev,
-      {
-        type: "system",
-        username: "System",
-        message: `Friend request sent to ${friendName.trim()}`,
-        timestamp: Math.floor(Date.now() / 1000),
-        room: "system",
-      },
-    ]);
-  };
-
   const handleAcceptFriend = (from: string) => {
     const id = `dm:${from}`;
     const conv: Conversation = {
@@ -370,39 +342,6 @@ export default function ChatPage() {
         <aside className="mb-3 flex w-full flex-none flex-col gap-3 rounded-2xl border border-black/5 bg-surface-light p-3 shadow-sm dark:border-white/10 dark:bg-surface-dark md:mb-0 md:w-80">
           <div className="flex items-center justify-between px-1">
             <span className="text-sm font-semibold">Chats</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleFindFriend}
-                className="flex h-8 items-center gap-1 rounded-full bg-primary/20 px-3 text-xs font-semibold text-text-main-light dark:text-text-main-dark"
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  person_add
-                </span>
-                Find friend
-              </button>
-              <button
-                onClick={() => {
-                  if (typeof window === "undefined") return;
-                  const name = window.prompt("Group name?");
-                  if (!name) return;
-                  const id = `group-${Date.now()}`;
-                  const conv: Conversation = {
-                    id,
-                    label: name,
-                    description: "Custom group chat",
-                    type: "group",
-                  };
-                  setConversations((prev) => [conv, ...prev]);
-                  setSelectedRoom(id);
-                }}
-                className="flex h-8 items-center gap-1 rounded-full bg-primary/20 px-3 text-xs font-semibold text-text-main-light dark:text-text-main-dark"
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  group_add
-                </span>
-                New group
-              </button>
-            </div>
           </div>
           <div className="no-scrollbar mt-1 flex flex-col gap-1 overflow-y-auto">
             {conversations.map((conv) => (

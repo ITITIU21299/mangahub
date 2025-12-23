@@ -96,7 +96,10 @@ async function rateLimitedFetch(url: string, retries = 3) {
       // Check for network errors (including ECONNREFUSED)
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      const errorCode = (error as any)?.code;
+      const errorCode =
+        typeof (error as { code?: unknown }).code === "string"
+          ? (error as { code?: unknown }).code
+          : undefined;
 
       const isNetworkError =
         error instanceof TypeError ||

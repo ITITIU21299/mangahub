@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -73,11 +74,14 @@ export default function SignUpPage() {
 
         {/* Hero */}
         <div className="px-4 pb-6 pt-2 text-center">
-          <div className="mx-auto mb-6 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-primary/20">
-            <img
+          <div className="relative mx-auto mb-6 h-32 w-32 overflow-hidden rounded-full bg-primary/20">
+            <Image
               alt="Manga artwork"
-              className="h-full w-full object-cover opacity-90 mix-blend-multiply dark:mix-blend-normal"
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLKFNX3mZ7ZmIwXB2ZgMVBw5NHf0NXBqfwGTU13IslilRpX_s9G2md0J1OkgwclTBOIeLTmgfsNTf25WfHIf0VHmpFQ0hi5OpJLSJHgJ3gImE5nOOOdGHC9zSNxTcuozptBaYdUyMCcYiWOf2XZzILYfQQ8E0zdmM-URyJuxx2hPctNs_DeHgLiICrWBT1z4YWHd_qGeC99RFYmJ-6ZGNYNvPBnTVKQwu4vR5uMna79a3or87yIGr6WNtQlIosWPTbrgO23YaaZL0"
+              fill
+              sizes="128px"
+              className="object-cover opacity-90 mix-blend-multiply dark:mix-blend-normal"
+              priority
             />
           </div>
           <h1 className="px-4 pb-2 text-[32px] font-bold leading-tight tracking-tight">

@@ -47,7 +47,6 @@ type SearchResult struct {
 }
 
 // SearchManga implements UC-003: search manga with filters and pagination.
-// If local DB has few results and UseMangaDex is true, fetches from MangaDex and caches results.
 func (s *Service) SearchManga(params SearchParams) (*SearchResult, error) {
 	// Validate and set defaults
 	if params.Page < 1 {
@@ -57,127 +56,12 @@ func (s *Service) SearchManga(params SearchParams) (*SearchResult, error) {
 		params.Limit = 20
 	}
 
-	// If filtering by genre and MangaDex is enabled, always use MangaDex + client-side genre filter
-	// This ensures we see the full MangaDex catalog for that genre, not just the small local DB.
-	if params.Genre != "" && s.UseMangaDex {
-		log.Printf("[Manga] Genre filter active (%s) - using MangaDex with client-side genre filtering", params.Genre)
-		return s.searchMangaDexAndCache(params)
+	if !s.UseMangaDex {
+		return nil, errors.New("mangadex integration disabled")
 	}
 
-	// Strategy:
-	// 1. If no query/filter (browsing all): Always fetch from MangaDex for full catalog (80,000+)
-	// 2. If query/filter: Check local DB first, fallback to MangaDex if no results
-	// 3. Cache all results from MangaDex for future queries
-
-	// For "all/trending" view (no query/filter), always use MangaDex to show full catalog
-	if params.Query == "" && params.Genre == "" && params.Status == "" {
-		if s.UseMangaDex {
-			log.Printf("[Manga] Browsing all manga - fetching from MangaDex for full catalog")
-			return s.searchMangaDexAndCache(params)
-		}
-		// If MangaDex disabled, use local DB
-		return s.searchLocalDB(params)
-	}
-
-	// For specific queries/filters: try local DB first, then MangaDex
-	localResult, err := s.searchLocalDB(params)
-	if err != nil {
-		log.Printf("Error searching local DB: %v", err)
-	}
-
-	// If local DB has results for this query, use them
-	if localResult != nil && localResult.Total > 0 {
-		log.Printf("[Manga] Found %d results in local DB for query/filter", localResult.Total)
-		return localResult, nil
-	}
-
-	// No local results - try MangaDex
-	if s.UseMangaDex {
-		log.Printf("[Manga] No local results for query/filter, fetching from MangaDex")
-		return s.searchMangaDexAndCache(params)
-	}
-
-	// No results and MangaDex disabled
-	if localResult == nil {
-		return &SearchResult{
-			Data:       []models.Manga{},
-			Total:      0,
-			Page:       params.Page,
-			Limit:      params.Limit,
-			TotalPages: 0,
-		}, nil
-	}
-
-	return localResult, nil
-}
-
-// searchLocalDB searches only the local database
-func (s *Service) searchLocalDB(params SearchParams) (*SearchResult, error) {
-	// Build WHERE clause
-	var whereConditions []string
-	var args []interface{}
-
-	if params.Query != "" {
-		searchPattern := "%" + strings.ToLower(params.Query) + "%"
-		whereConditions = append(whereConditions, "(LOWER(title) LIKE ? OR LOWER(author) LIKE ?)")
-		args = append(args, searchPattern, searchPattern)
-	}
-
-	if params.Genre != "" {
-		whereConditions = append(whereConditions, "genres LIKE ?")
-		args = append(args, "%\""+params.Genre+"\"%")
-	}
-
-	if params.Status != "" {
-		whereConditions = append(whereConditions, "status = ?")
-		args = append(args, params.Status)
-	}
-
-	whereClause := ""
-	if len(whereConditions) > 0 {
-		whereClause = "WHERE " + strings.Join(whereConditions, " AND ")
-	}
-
-	// Get total count
-	countQuery := "SELECT COUNT(*) FROM manga " + whereClause
-	var total int
-	err := s.DB.QueryRow(countQuery, args...).Scan(&total)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get paginated results
-	offset := (params.Page - 1) * params.Limit
-	querySQL := `SELECT id, title, author, genres, status, total_chapters, description, cover_url 
-		FROM manga ` + whereClause + ` ORDER BY title LIMIT ? OFFSET ?`
-	args = append(args, params.Limit, offset)
-
-	rows, err := s.DB.Query(querySQL, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var result []models.Manga
-	for rows.Next() {
-		var m models.Manga
-		var genresJSON string
-		if err := rows.Scan(&m.ID, &m.Title, &m.Author, &genresJSON, &m.Status, &m.TotalChapters, &m.Description, &m.CoverURL); err != nil {
-			log.Printf("Error scanning manga row: %v", err)
-			continue
-		}
-		m.Genres = parseGenres(genresJSON)
-		result = append(result, m)
-	}
-
-	totalPages := (total + params.Limit - 1) / params.Limit
-	return &SearchResult{
-		Data:       result,
-		Total:      total,
-		Page:       params.Page,
-		Limit:      params.Limit,
-		TotalPages: totalPages,
-	}, nil
+	// Always use MangaDex; if it fails, bubble the error to the caller.
+	return s.searchMangaDexAndCache(params)
 }
 
 // searchMangaDexAndCache fetches from MangaDex and caches results in local DB
@@ -185,13 +69,13 @@ func (s *Service) searchLocalDB(params SearchParams) (*SearchResult, error) {
 func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, error) {
 	offset := (params.Page - 1) * params.Limit
 
-	log.Printf("[Manga] Fetching from MangaDex: query=%s, genre=%s, status=%s, limit=%d, offset=%d", 
+	log.Printf("[Manga] Fetching from MangaDex: query=%s, genre=%s, status=%s, limit=%d, offset=%d",
 		params.Query, params.Genre, params.Status, params.Limit, offset)
 
 	// If filtering by genre, we need to fetch larger batches and filter client-side
 	// because MangaDex doesn't accept genre names, only tag IDs
 	hasGenreFilter := params.Genre != ""
-	
+
 	var allMangas []models.Manga
 	var mangadexTotal int
 	batchSize := 100
@@ -205,10 +89,10 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 		// Increase max batches for rare genres - fetch up to 50 batches (5000 manga) if needed
 		maxBatches = 50
 		targetCount := offset + params.Limit
-		
+
 		// Also try partial matching (contains) in addition to exact match
 		genreLower := strings.ToLower(params.Genre)
-		
+
 		for len(allMangas) < targetCount && currentOffset < maxBatches*batchSize {
 			mdResp, err := s.MangaDex.SearchManga(params.Query, "", params.Status, batchSize, currentOffset)
 			if err != nil {
@@ -240,15 +124,13 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 						allMangas = append(allMangas, *manga)
 						totalFiltered++
 						batchFiltered++
-						// Cache in local DB (async)
-						go s.cacheManga(manga)
 					}
 				}
 			}
 
 			// Log progress every 5 batches
 			if (currentOffset/batchSize+1)%5 == 0 {
-				log.Printf("[Manga] Genre filter progress: fetched %d batches (%d manga), found %d matching '%s'", 
+				log.Printf("[Manga] Genre filter progress: fetched %d batches (%d manga), found %d matching '%s'",
 					currentOffset/batchSize+1, totalFetched, totalFiltered, params.Genre)
 			}
 
@@ -271,13 +153,13 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 				break // No more data
 			}
 			currentOffset += batchSize
-			
+
 			// If we've found enough for pagination and have a good sample, we can stop early
 			if len(allMangas) >= targetCount && totalFetched >= 1000 {
 				break
 			}
 		}
-		
+
 		log.Printf("[Manga] Genre filter complete: fetched %d manga, found %d matching '%s'", totalFetched, totalFiltered, params.Genre)
 
 		// Calculate estimated total based on filter ratio
@@ -300,7 +182,7 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 		} else {
 			paginatedMangas = []models.Manga{}
 		}
-		
+
 		// If no results found, log a warning
 		if len(paginatedMangas) == 0 && totalFiltered == 0 {
 			log.Printf("[Manga] Warning: No manga found matching genre '%s' after fetching %d manga", params.Genre, totalFetched)
@@ -319,8 +201,8 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 	// No genre filter - direct fetch
 	mdResp, err := s.MangaDex.SearchManga(params.Query, "", params.Status, params.Limit, offset)
 	if err != nil {
-		log.Printf("[Manga] Error fetching from MangaDex: %v, falling back to local DB", err)
-		return s.searchLocalDB(params)
+		log.Printf("[Manga] Error fetching from MangaDex: %v", err)
+		return nil, err
 	}
 
 	log.Printf("[Manga] MangaDex returned %d results, total: %d", len(mdResp.Data), mdResp.Total)
@@ -331,8 +213,6 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 		manga := mangadex.TransformMangaDexToManga(&mdManga)
 		if manga != nil {
 			mangas = append(mangas, *manga)
-			// Cache in local DB (async, don't block response)
-			go s.cacheManga(manga)
 		}
 	}
 
@@ -380,7 +260,7 @@ func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
 		FROM manga WHERE id = ?`,
 		id,
 	).Scan(&m.ID, &m.Title, &m.Author, &genresJSON, &m.Status, &m.TotalChapters, &m.Description, &m.CoverURL)
-	
+
 	if err == nil {
 		// Found in local DB
 		m.Genres = parseGenres(genresJSON)
@@ -467,4 +347,3 @@ func parseGenres(genresJSON string) []string {
 	}
 	return genres
 }
-

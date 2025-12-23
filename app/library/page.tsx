@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import BottomNav from "@/components/BottomNav";
 
 const LOCAL_API_BASE =
@@ -282,14 +283,17 @@ export default function LibraryPage() {
                 >
                   <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg bg-gray-200 dark:bg-gray-800">
                     {item.manga?.cover_url ? (
-                      <img
+                      <Image
+                        fill
+                        sizes="(min-width:1024px) 20vw, (min-width:768px) 25vw, (min-width:640px) 33vw, 50vw"
                         src={`${LOCAL_API_BASE}/proxy/cover?url=${encodeURIComponent(
                           item.manga.cover_url
                         )}`}
                         alt={item.manga.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = "none";
                         }}
                       />
                     ) : (

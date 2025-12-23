@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Image from "next/image";
 import BottomNav from "@/components/BottomNav";
 
 const MANGADEX_API = "/api/mangadex";
@@ -26,10 +27,6 @@ interface UserProgress {
   current_chapter: number;
   status: string;
   updated_at: string;
-}
-
-interface MangaDetailsResponse extends Manga {
-  user_progress: UserProgress | null;
 }
 
 export default function MangaDetailsPage() {
@@ -76,84 +73,57 @@ export default function MangaDetailsPage() {
         ? mangaId.replace("mangadex-", "")
         : mangaId;
 
-      // Try MangaDex API first
-      let res = await fetch(`${MANGADEX_API}/manga/${mangadexId}`);
+      // Try MangaDex API; if it fails, surface the error instead of falling back.
+      const res = await fetch(`${MANGADEX_API}/manga/${mangadexId}`);
 
       let mangaData: Manga | null = null;
       let progressData: UserProgress | null = null;
 
-      // If MangaDex fails, fallback to local API
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        const isNetworkError =
-          res.status === 500 &&
-          (errorData.error?.includes("Unable to connect") ||
-            errorData.error?.includes("ECONNREFUSED") ||
-            errorData.error?.includes("fetch failed"));
+        setError(errorData.error || "Failed to load manga");
+        return;
+      }
 
-        if (isNetworkError && token) {
-          console.log("[Manga Details] MangaDex unavailable, using local API");
-          res = await fetch(`${LOCAL_API_BASE}/manga/${mangaId}`, {
+      // MangaDex succeeded
+      mangaData = await res.json();
+
+      // Fetch user progress from local API if logged in
+      if (token) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+          const progressRes = await fetch(`${LOCAL_API_BASE}/users/library`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
+            signal: controller.signal,
           });
 
-          if (res.ok) {
-            const localData: MangaDetailsResponse = await res.json();
-            mangaData = localData;
-            progressData = localData.user_progress || null;
-          } else {
-            const localError = await res.json().catch(() => ({}));
-            setError(localError.error || "Manga not found");
-            return;
-          }
-        } else {
-          setError(errorData.error || "Failed to load manga");
-          return;
-        }
-      } else {
-        // MangaDex succeeded
-        mangaData = await res.json();
+          clearTimeout(timeoutId);
 
-        // Fetch user progress from local API if logged in
-        if (token) {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-            const progressRes = await fetch(`${LOCAL_API_BASE}/users/library`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              signal: controller.signal,
-            });
-
-            clearTimeout(timeoutId);
-
-            if (progressRes.ok) {
-              const library: UserProgress[] | null = await progressRes
-                .json()
-                .catch(() => null);
-              if (library && Array.isArray(library)) {
-                const progress = library.find((p) => p.manga_id === mangaId);
-                progressData = progress || null;
-              }
+          if (progressRes.ok) {
+            const library: UserProgress[] | null = await progressRes
+              .json()
+              .catch(() => null);
+            if (library && Array.isArray(library)) {
+              const progress = library.find((p) => p.manga_id === mangaId);
+              progressData = progress || null;
             }
-          } catch (err) {
-            // Silently fail if API server is not available
-            // This is expected if Go API server is not running
-            // Only log if it's not a network/abort error
-            if (err instanceof Error) {
-              const isNetworkError =
-                err.name === "AbortError" ||
-                err.message.includes("Failed to fetch") ||
-                err.message.includes("NetworkError") ||
-                err.message.includes("ECONNREFUSED");
+          }
+        } catch (err) {
+          // Silently fail if API server is not available
+          // Only log if it's not a network/abort error
+          if (err instanceof Error) {
+            const isNetworkError =
+              err.name === "AbortError" ||
+              err.message.includes("Failed to fetch") ||
+              err.message.includes("NetworkError") ||
+              err.message.includes("ECONNREFUSED");
 
-              if (!isNetworkError) {
-                console.warn("Failed to fetch user progress:", err.message);
-              }
+            if (!isNetworkError) {
+              console.warn("Failed to fetch user progress:", err.message);
             }
           }
         }
@@ -412,14 +382,17 @@ export default function MangaDetailsPage() {
           <div className="flex-shrink-0">
             <div className="relative aspect-[3/4] w-full max-w-[200px] overflow-hidden rounded-xl shadow-lg md:w-[200px]">
               {manga.cover_url ? (
-                <img
+                <Image
                   src={`${LOCAL_API_BASE}/proxy/cover?url=${encodeURIComponent(
                     manga.cover_url
                   )}`}
                   alt={manga.title}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="200px"
+                  className="object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
                   }}
                 />
               ) : (

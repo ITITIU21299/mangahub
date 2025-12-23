@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   const themeInitScript = `(function(){try{var s=localStorage.getItem('mangahub_theme');var p=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s|| (p?'dark':'light');if(t==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();`;
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link
           rel="stylesheet"

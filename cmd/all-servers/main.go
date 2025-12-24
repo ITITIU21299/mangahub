@@ -161,7 +161,6 @@ func main() {
 				allowedOrigins = append(allowedOrigins, strings.TrimSpace(origin))
 			}
 		} else {
-			// Default: allow localhost and common development origins
 			allowedOrigins = []string{
 				"http://localhost:3000",
 				"http://127.0.0.1:3000",
@@ -171,7 +170,6 @@ func main() {
 			}
 		}
 
-		// Function to check if origin is allowed (for local network IPs)
 		allowOriginFunc := func(origin string) bool {
 			// Check if origin is in the explicit allowed list
 			for _, allowed := range allowedOrigins {
@@ -179,17 +177,11 @@ func main() {
 					return true
 				}
 			}
-			// Allow localhost variants
 			if strings.HasPrefix(origin, "http://localhost:") ||
 				strings.HasPrefix(origin, "http://127.0.0.1:") ||
 				strings.HasPrefix(origin, "http://0.0.0.0:") {
 				return true
 			}
-			// Allow local network IPs:
-			// - 10.x.x.x (private class A)
-			// - 172.16-31.x.x (private class B)
-			// - 192.168.x.x (private class C)
-			// - 25.x.x.x (your network range)
 			if strings.HasPrefix(origin, "http://10.") ||
 				strings.HasPrefix(origin, "http://192.168.") ||
 				strings.HasPrefix(origin, "http://25.") {
@@ -235,7 +227,6 @@ func main() {
 			MaxAge:           12 * time.Hour,
 		}))
 
-		// Public proxy endpoint for MangaDex cover images to avoid hotlinking placeholders
 		r.GET("/proxy/cover", func(c *gin.Context) {
 			url := c.Query("url")
 			if url == "" {

@@ -18,7 +18,7 @@ type ChatMessage = {
   message?: string;
   timestamp: number;
   room?: string;
-  target?: string; // for friend requests
+  target?: string;
 };
 
 const WS_URL =
@@ -78,9 +78,7 @@ export default function ChatPage() {
             name = decoded.usr;
           }
         }
-      } catch {
-        // ignore decode error
-      }
+      } catch {}
     }
 
     if (!name) {
@@ -94,7 +92,7 @@ export default function ChatPage() {
   }, []);
 
   const connect = () => {
-    // Wait for username to be loaded (username starts as empty string)
+    // Wait for username to be loaded
     if (!username || username.trim() === "") {
       return;
     }
@@ -138,7 +136,6 @@ export default function ChatPage() {
           return;
         }
 
-        // Friend request: only show if this user is the target
         if (
           payload.type === "friend_request" &&
           payload.target === activeName

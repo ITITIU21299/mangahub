@@ -19,7 +19,6 @@ func RegisterRoutes(r *gin.RouterGroup, svc *Service) {
 	r.GET("/manga/:id", h.HandleGetManga)
 }
 
-// HandleListManga implements UC-003: search manga endpoint.
 func (h *Handler) HandleListManga(c *gin.Context) {
 	// Parse query parameters
 	query := c.Query("q")
@@ -55,8 +54,8 @@ func (h *Handler) HandleListManga(c *gin.Context) {
 		"data": result.Data,
 		"pagination": gin.H{
 			"page":        result.Page,
-			"limit":      result.Limit,
-			"total":      result.Total,
+			"limit":       result.Limit,
+			"total":       result.Total,
 			"total_pages": result.TotalPages,
 		},
 	})
@@ -92,4 +91,3 @@ func (h *Handler) HandleGetManga(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
-

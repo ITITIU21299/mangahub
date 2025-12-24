@@ -16,7 +16,7 @@ import (
 type Service struct {
 	DB          *sql.DB
 	MangaDex    *mangadex.Client
-	UseMangaDex bool // Whether to fetch from MangaDex when local DB has few results
+	UseMangaDex bool
 }
 
 func NewService(db *sql.DB) *Service {
@@ -24,7 +24,7 @@ func NewService(db *sql.DB) *Service {
 	return &Service{
 		DB:          db,
 		MangaDex:    mangadex.NewClient(),
-		UseMangaDex: useMangaDex != "false", // Default to true unless explicitly disabled
+		UseMangaDex: useMangaDex != "false",
 	}
 }
 
@@ -46,7 +46,6 @@ type SearchResult struct {
 	TotalPages int
 }
 
-// SearchManga implements UC-003: search manga with filters and pagination.
 func (s *Service) SearchManga(params SearchParams) (*SearchResult, error) {
 	// Validate and set defaults
 	if params.Page < 1 {
@@ -60,12 +59,9 @@ func (s *Service) SearchManga(params SearchParams) (*SearchResult, error) {
 		return nil, errors.New("mangadex integration disabled")
 	}
 
-	// Always use MangaDex; if it fails, bubble the error to the caller.
 	return s.searchMangaDexAndCache(params)
 }
 
-// searchMangaDexAndCache fetches from MangaDex and caches results in local DB
-// For genre filtering, fetches larger batches and filters client-side (MangaDex requires tag IDs, not names)
 func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, error) {
 	offset := (params.Page - 1) * params.Limit
 
@@ -90,7 +86,7 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 		maxBatches = 50
 		targetCount := offset + params.Limit
 
-		// Also try partial matching (contains) in addition to exact match
+		// Also try partial matching in addition to exact match
 		genreLower := strings.ToLower(params.Genre)
 
 		for len(allMangas) < targetCount && currentOffset < maxBatches*batchSize {
@@ -249,10 +245,7 @@ func (s *Service) cacheManga(m *models.Manga) {
 	}
 }
 
-// isUUID checks if a string looks like a UUID (MangaDex ID format)
 func isUUID(s string) bool {
-	// MangaDex IDs are UUIDs: 8-4-4-4-12 format (36 chars total with hyphens)
-	// Example: "9e7def13-2ce9-424b-a178-1f907023ffea"
 	if len(s) != 36 {
 		return false
 	}
@@ -263,11 +256,7 @@ func isUUID(s string) bool {
 	return false
 }
 
-// GetMangaByID retrieves a single manga by ID.
-// Supports both prefixed ("mangadex-{id}") and raw UUID formats.
-// If not found in local DB, tries to fetch from MangaDex if it's a MangaDex ID.
 func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
-	// Try local database first with the ID as-is
 	var m models.Manga
 	var genresJSON string
 	err := s.DB.QueryRow(
@@ -277,7 +266,6 @@ func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
 	).Scan(&m.ID, &m.Title, &m.Author, &genresJSON, &m.Status, &m.TotalChapters, &m.Description, &m.CoverURL)
 
 	if err == nil {
-		// Found in local DB
 		m.Genres = parseGenres(genresJSON)
 		return &m, nil
 	}
@@ -287,8 +275,6 @@ func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
 		return nil, errors.New("failed to query manga")
 	}
 
-	// Not found with the ID as-is
-	// If it's a raw UUID (MangaDex format), try with "mangadex-" prefix
 	if isUUID(id) {
 		prefixedID := "mangadex-" + id
 		err := s.DB.QueryRow(
@@ -298,7 +284,6 @@ func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
 		).Scan(&m.ID, &m.Title, &m.Author, &genresJSON, &m.Status, &m.TotalChapters, &m.Description, &m.CoverURL)
 
 		if err == nil {
-			// Found with prefixed ID
 			m.Genres = parseGenres(genresJSON)
 			return &m, nil
 		}
@@ -308,7 +293,6 @@ func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
 			return nil, errors.New("failed to query manga")
 		}
 
-		// Still not found - try fetching from MangaDex
 		if s.UseMangaDex {
 			log.Printf("Manga %s not in local DB, fetching from MangaDex...", id)
 			mdManga, err := s.MangaDex.GetMangaByID(id)

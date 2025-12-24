@@ -25,7 +25,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// ChatPayload and WebSocket server code (simplified from websocket-server)
+// ChatPayload and WebSocket server code
 type ChatPayload struct {
 	Type      string `json:"type"`
 	Username  string `json:"username"`
@@ -110,8 +110,6 @@ func main() {
 	// Initialize database - use absolute path or path relative to mangahub root
 	dbPath := os.Getenv("MANGAHUB_DB_PATH")
 	if dbPath == "" {
-		// Try to use mangahub.db in the project root (where seed script puts it)
-		// If running from cmd/all-servers, go up two levels
 		if _, err := os.Stat("../../mangahub.db"); err == nil {
 			dbPath = "../../mangahub.db"
 		} else if _, err := os.Stat("../mangahub.db"); err == nil {
@@ -167,6 +165,7 @@ func main() {
 				"http://25.17.216.66:3000",
 				"http://25.19.136.155:3000",
 				"http://0.0.0.0:3000",
+				"http://192.168.1.9:3000",
 			}
 		}
 
@@ -187,14 +186,9 @@ func main() {
 				strings.HasPrefix(origin, "http://25.") {
 				return true
 			}
-			// Check for 172.16-31.x.x range (private class B)
-			// Match patterns like "http://172.16.", "http://172.17.", ..., "http://172.31."
 			if strings.HasPrefix(origin, "http://172.") {
-				// Extract the second octet to verify it's in 16-31 range
-				// "http://172." = 11 chars, so check the next part
 				if len(origin) >= 14 {
-					secondOctetStart := origin[11:14] // Get "16.", "17.", "20.", "31.", etc.
-					// Check if second octet is 16-31
+					secondOctetStart := origin[11:14]
 					if (strings.HasPrefix(secondOctetStart, "16") ||
 						strings.HasPrefix(secondOctetStart, "17") ||
 						strings.HasPrefix(secondOctetStart, "18") ||
@@ -360,14 +354,6 @@ func main() {
 		}
 	}()
 
-	log.Println("🚀 All MangaHub servers started!")
-	log.Println("   - HTTP API:    http://localhost:8080")
-	log.Println("   - gRPC:        localhost:9092")
-	log.Println("   - TCP:         localhost:9090")
-	log.Println("   - UDP:         localhost:9091")
-	log.Println("   - WebSocket:   ws://localhost:9093/ws")
-	log.Println("\nPress Ctrl+C to stop all servers...")
-
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -397,9 +383,6 @@ func main() {
 	if grpcServer != nil {
 		grpcServer.Stop()
 	}
-
-	// Note: TCP and UDP servers will stop when the process exits
-	// They don't have graceful shutdown methods, but closing listeners will cause them to exit
 
 	// Wait for all goroutines to finish
 	done := make(chan struct{})

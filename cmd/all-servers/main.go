@@ -171,8 +171,64 @@ func main() {
 			}
 		}
 
+		// Function to check if origin is allowed (for local network IPs)
+		allowOriginFunc := func(origin string) bool {
+			// Check if origin is in the explicit allowed list
+			for _, allowed := range allowedOrigins {
+				if origin == allowed {
+					return true
+				}
+			}
+			// Allow localhost variants
+			if strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "http://127.0.0.1:") ||
+				strings.HasPrefix(origin, "http://0.0.0.0:") {
+				return true
+			}
+			// Allow local network IPs:
+			// - 10.x.x.x (private class A)
+			// - 172.16-31.x.x (private class B)
+			// - 192.168.x.x (private class C)
+			// - 25.x.x.x (your network range)
+			if strings.HasPrefix(origin, "http://10.") ||
+				strings.HasPrefix(origin, "http://192.168.") ||
+				strings.HasPrefix(origin, "http://25.") {
+				return true
+			}
+			// Check for 172.16-31.x.x range (private class B)
+			// Match patterns like "http://172.16.", "http://172.17.", ..., "http://172.31."
+			if strings.HasPrefix(origin, "http://172.") {
+				// Extract the second octet to verify it's in 16-31 range
+				// "http://172." = 11 chars, so check the next part
+				if len(origin) >= 14 {
+					secondOctetStart := origin[11:14] // Get "16.", "17.", "20.", "31.", etc.
+					// Check if second octet is 16-31
+					if (strings.HasPrefix(secondOctetStart, "16") ||
+						strings.HasPrefix(secondOctetStart, "17") ||
+						strings.HasPrefix(secondOctetStart, "18") ||
+						strings.HasPrefix(secondOctetStart, "19") ||
+						strings.HasPrefix(secondOctetStart, "20") ||
+						strings.HasPrefix(secondOctetStart, "21") ||
+						strings.HasPrefix(secondOctetStart, "22") ||
+						strings.HasPrefix(secondOctetStart, "23") ||
+						strings.HasPrefix(secondOctetStart, "24") ||
+						strings.HasPrefix(secondOctetStart, "25") ||
+						strings.HasPrefix(secondOctetStart, "26") ||
+						strings.HasPrefix(secondOctetStart, "27") ||
+						strings.HasPrefix(secondOctetStart, "28") ||
+						strings.HasPrefix(secondOctetStart, "29") ||
+						strings.HasPrefix(secondOctetStart, "30") ||
+						strings.HasPrefix(secondOctetStart, "31")) &&
+						len(secondOctetStart) >= 3 && secondOctetStart[2] == '.' {
+						return true
+					}
+				}
+			}
+			return false
+		}
+
 		r.Use(cors.New(cors.Config{
-			AllowOrigins:     allowedOrigins,
+			AllowOriginFunc:  allowOriginFunc,
 			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 			AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 			AllowCredentials: true,

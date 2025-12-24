@@ -40,6 +40,7 @@ type MangaDexManga struct {
 		Description map[string]string `json:"description"`
 		Status      string            `json:"status"`
 		LastChapter string            `json:"lastChapter"`
+		LastVolume  string            `json:"lastVolume"`
 		Tags        []struct {
 			Attributes struct {
 				Name map[string]string `json:"name"`
@@ -128,8 +129,141 @@ func (c *Client) SearchManga(query, genre, status string, limit, offset int) (*M
 	return &result, nil
 }
 
+// GetMangaByID fetches a single manga from MangaDex by ID
+func (c *Client) GetMangaByID(mangaID string) (*MangaDexManga, error) {
+	params := url.Values{}
+	params.Add("includes[]", "cover_art")
+	params.Add("includes[]", "author")
+	params.Add("includes[]", "artist")
+	
+	reqURL := fmt.Sprintf("%s/manga/%s?%s", c.baseURL, mangaID, params.Encode())
+	
+	log.Printf("[MangaDex] Fetching manga by ID: %s", reqURL)
+	
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("User-Agent", "MangaHub/1.0 (Net Centric Project)")
+	req.Header.Set("Accept", "application/json")
+
+	// Rate limiting: wait 200ms between requests
+	time.Sleep(200 * time.Millisecond)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("manga not found")
+	}
+	
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("MangaDex API error: %d - %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		Result string        `json:"result"`
+		Data   MangaDexManga `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	if result.Result != "ok" {
+		return nil, fmt.Errorf("MangaDex API error: result is not ok")
+	}
+
+	log.Printf("[MangaDex] Successfully fetched manga: %s", result.Data.ID)
+	return &result.Data, nil
+}
+
+// AggregateResponse represents the MangaDex aggregate endpoint response
+type AggregateResponse struct {
+	Result  string `json:"result"`
+	Volumes map[string]struct {
+		Volume   string `json:"volume"`
+		Count    int    `json:"count"`
+		Chapters map[string]struct {
+			Chapter string `json:"chapter"`
+			ID      string `json:"id"`
+			Count   int    `json:"count"`
+		} `json:"chapters"`
+	} `json:"volumes"`
+}
+
+// GetChapterCount fetches the highest chapter number from the aggregate endpoint
+// This avoids language filter issues and gives accurate chapter counts
+func (c *Client) GetChapterCount(mangaID string) (int, error) {
+	reqURL := fmt.Sprintf("%s/manga/%s/aggregate", c.baseURL, mangaID)
+	
+	log.Printf("[MangaDex] Fetching chapter count from aggregate: %s", reqURL)
+	
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return 0, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("User-Agent", "MangaHub/1.0 (Net Centric Project)")
+	req.Header.Set("Accept", "application/json")
+
+	// Rate limiting: wait 200ms between requests
+	time.Sleep(200 * time.Millisecond)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("fetch failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return 0, fmt.Errorf("manga not found")
+	}
+	
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return 0, fmt.Errorf("MangaDex API error: %d - %s", resp.StatusCode, string(body))
+	}
+
+	var result AggregateResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 0, fmt.Errorf("decode response: %w", err)
+	}
+
+	if result.Result != "ok" {
+		return 0, fmt.Errorf("MangaDex API error: result is not ok")
+	}
+
+	// Find the highest chapter number across all volumes
+	maxChapter := 0.0
+	for _, volume := range result.Volumes {
+		for chapterKey := range volume.Chapters {
+			var ch float64
+			if _, err := fmt.Sscanf(chapterKey, "%f", &ch); err == nil {
+				if ch > maxChapter {
+					maxChapter = ch
+				}
+			}
+		}
+	}
+
+	if maxChapter > 0 {
+		log.Printf("[MangaDex] Found highest chapter from aggregate: %.0f", maxChapter)
+		return int(maxChapter), nil
+	}
+
+	log.Printf("[MangaDex] No chapters found in aggregate response")
+	return 0, nil
+}
+
 // TransformMangaDexToManga converts MangaDex manga to our Manga model
-func TransformMangaDexToManga(md *MangaDexManga) *models.Manga {
+// If useAggregate is true and client is provided, it will fetch chapter count from aggregate endpoint for accuracy
+// Otherwise, it uses lastChapter from the manga attributes (faster, suitable for list views)
+func TransformMangaDexToManga(md *MangaDexManga, client *Client, useAggregate bool) *models.Manga {
 	if md == nil || md.Attributes.Title == nil {
 		return nil
 	}
@@ -193,10 +327,23 @@ func TransformMangaDexToManga(md *MangaDexManga) *models.Manga {
 		}
 	}
 
-	// Parse total chapters from lastChapter
+	// Get total chapters count
 	totalChapters := 0
-	if md.Attributes.LastChapter != "" {
-		// Try to parse as float (e.g., "1100.5" -> 1100)
+	
+	// Only use aggregate endpoint if explicitly requested (for detail pages)
+	// For list views, use lastChapter to avoid making many API calls
+	if useAggregate && client != nil {
+		if count, err := client.GetChapterCount(md.ID); err == nil && count > 0 {
+			totalChapters = count
+			log.Printf("[MangaDex] Using chapter count from aggregate: %d", totalChapters)
+		} else {
+			log.Printf("[MangaDex] Failed to get chapter count from aggregate, falling back to lastChapter: %v", err)
+		}
+	}
+	
+	// Use lastChapter if aggregate wasn't used or didn't work
+	if totalChapters == 0 && md.Attributes.LastChapter != "" {
+		// Try to parse as float (e.g., "1100.5" -> 1100, "80" -> 80)
 		var ch float64
 		if _, err := fmt.Sscanf(md.Attributes.LastChapter, "%f", &ch); err == nil {
 			totalChapters = int(ch)

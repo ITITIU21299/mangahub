@@ -219,47 +219,43 @@ function transformMangaDexToManga(mangaItem: MangaDexManga): {
 
 async function fetchChapterCount(mangaId: string): Promise<number> {
   try {
-    // First, try to get total count from chapters endpoint (more accurate)
-    const chaptersUrl = `${MANGADEX_BASE}/chapter?manga=${mangaId}&limit=1&translatedLanguage[]=en`;
-    const chaptersData = (await rateLimitedFetch(chaptersUrl)) as {
+    // Use aggregate endpoint to get accurate chapter count (no language filter issues)
+    const aggregateUrl = `${MANGADEX_BASE}/manga/${mangaId}/aggregate`;
+    const aggregateData = (await rateLimitedFetch(aggregateUrl)) as {
       result: string;
-      response: string;
-      total?: number;
-    };
-
-    // If we have a total count, use it
-    if (chaptersData?.total !== undefined && chaptersData.total > 0) {
-      return chaptersData.total;
-    }
-
-    // Fallback: try to get the highest chapter number
-    const chaptersOrderedUrl = `${MANGADEX_BASE}/chapter?manga=${mangaId}&limit=1&order[chapter]=desc&translatedLanguage[]=en`;
-    const chaptersOrderedData = (await rateLimitedFetch(
-      chaptersOrderedUrl
-    )) as {
-      result: string;
-      response: string;
-      data?: Array<{
-        attributes?: {
-          chapter?: string;
+      volumes?: {
+        [volumeKey: string]: {
+          volume: string;
+          count: number;
+          chapters?: {
+            [chapterKey: string]: {
+              chapter: string;
+              id: string;
+              count: number;
+            };
+          };
         };
-      }>;
-      total?: number;
+      };
     };
 
-    if (chaptersOrderedData?.data && chaptersOrderedData.data.length > 0) {
-      const chapterNum = chaptersOrderedData.data[0]?.attributes?.chapter;
-      if (chapterNum && !isNaN(parseFloat(chapterNum))) {
-        return Math.floor(parseFloat(chapterNum));
+    if (aggregateData?.result === "ok" && aggregateData.volumes) {
+      // Find the highest chapter number across all volumes
+      let maxChapter = 0;
+      for (const volumeKey in aggregateData.volumes) {
+        const volume = aggregateData.volumes[volumeKey];
+        if (volume.chapters) {
+          for (const chapterKey in volume.chapters) {
+            const chapterNum = parseFloat(chapterKey);
+            if (!isNaN(chapterNum) && chapterNum > maxChapter) {
+              maxChapter = chapterNum;
+            }
+          }
+        }
       }
-    }
 
-    // If we still have a total from the ordered query, use it
-    if (
-      chaptersOrderedData?.total !== undefined &&
-      chaptersOrderedData.total > 0
-    ) {
-      return chaptersOrderedData.total;
+      if (maxChapter > 0) {
+        return Math.floor(maxChapter);
+      }
     }
 
     return 0;

@@ -37,7 +37,22 @@ const nextConfig: NextConfig = {
         port: "8080",
         pathname: "/**",
       },
+      {
+        protocol: "http",
+        hostname: "10.236.15.222",
+        port: "8080",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "172.20.10.9",
+        port: "8080",
+        pathname: "/**",
+      },
     ],
+    // Disable image optimization to bypass private IP restrictions
+    // This allows images from private IPs to load without errors
+    unoptimized: true,
   },
 };
 

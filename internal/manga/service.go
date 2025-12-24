@@ -107,7 +107,7 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 			// Transform and filter by genre
 			batchFiltered := 0
 			for _, mdManga := range mdResp.Data {
-				manga := mangadex.TransformMangaDexToManga(&mdManga)
+				manga := mangadex.TransformMangaDexToManga(&mdManga, s.MangaDex, false) // false = don't use aggregate for list views
 				if manga != nil {
 					totalFetched++
 					// Filter by genre (case-insensitive, also try partial match)
@@ -138,7 +138,7 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 			if currentOffset >= 500 && totalFiltered == 0 {
 				// Sample a few manga to see what genres we're getting
 				if len(mdResp.Data) > 0 {
-					sample := mangadex.TransformMangaDexToManga(&mdResp.Data[0])
+					sample := mangadex.TransformMangaDexToManga(&mdResp.Data[0], s.MangaDex, false) // false = don't use aggregate
 					if sample != nil && len(sample.Genres) > 0 {
 						sampleCount := 3
 						if len(sample.Genres) < sampleCount {
@@ -210,7 +210,7 @@ func (s *Service) searchMangaDexAndCache(params SearchParams) (*SearchResult, er
 	// Transform and cache results
 	var mangas []models.Manga
 	for _, mdManga := range mdResp.Data {
-		manga := mangadex.TransformMangaDexToManga(&mdManga)
+		manga := mangadex.TransformMangaDexToManga(&mdManga, s.MangaDex, false) // false = don't use aggregate for list views
 		if manga != nil {
 			mangas = append(mangas, *manga)
 		}
@@ -249,10 +249,25 @@ func (s *Service) cacheManga(m *models.Manga) {
 	}
 }
 
+// isUUID checks if a string looks like a UUID (MangaDex ID format)
+func isUUID(s string) bool {
+	// MangaDex IDs are UUIDs: 8-4-4-4-12 format (36 chars total with hyphens)
+	// Example: "9e7def13-2ce9-424b-a178-1f907023ffea"
+	if len(s) != 36 {
+		return false
+	}
+	// Check for hyphens at positions 8, 13, 18, 23
+	if len(s) >= 36 && s[8] == '-' && s[13] == '-' && s[18] == '-' && s[23] == '-' {
+		return true
+	}
+	return false
+}
+
 // GetMangaByID retrieves a single manga by ID.
-// If not found in local DB and ID starts with "mangadex-", tries to fetch from MangaDex.
+// Supports both prefixed ("mangadex-{id}") and raw UUID formats.
+// If not found in local DB, tries to fetch from MangaDex if it's a MangaDex ID.
 func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
-	// Try local database first
+	// Try local database first with the ID as-is
 	var m models.Manga
 	var genresJSON string
 	err := s.DB.QueryRow(
@@ -272,13 +287,59 @@ func (s *Service) GetMangaByID(id string) (*models.Manga, error) {
 		return nil, errors.New("failed to query manga")
 	}
 
-	// Not found in local DB
-	// If ID starts with "mangadex-", try fetching from MangaDex
-	if strings.HasPrefix(id, "mangadex-") && s.UseMangaDex {
+	// Not found with the ID as-is
+	// If it's a raw UUID (MangaDex format), try with "mangadex-" prefix
+	if isUUID(id) {
+		prefixedID := "mangadex-" + id
+		err := s.DB.QueryRow(
+			`SELECT id, title, author, genres, status, total_chapters, description, cover_url 
+			FROM manga WHERE id = ?`,
+			prefixedID,
+		).Scan(&m.ID, &m.Title, &m.Author, &genresJSON, &m.Status, &m.TotalChapters, &m.Description, &m.CoverURL)
+
+		if err == nil {
+			// Found with prefixed ID
+			m.Genres = parseGenres(genresJSON)
+			return &m, nil
+		}
+
+		if err != sql.ErrNoRows {
+			log.Printf("Error querying manga with prefixed ID: %v", err)
+			return nil, errors.New("failed to query manga")
+		}
+
+		// Still not found - try fetching from MangaDex
+		if s.UseMangaDex {
+			log.Printf("Manga %s not in local DB, fetching from MangaDex...", id)
+			mdManga, err := s.MangaDex.GetMangaByID(id)
+			if err != nil {
+				log.Printf("Failed to fetch from MangaDex: %v", err)
+				return nil, errors.New("not_found")
+			}
+
+			// Transform and cache the manga (use aggregate for detail page)
+			manga := mangadex.TransformMangaDexToManga(mdManga, s.MangaDex, true) // true = use aggregate for detail pages
+			if manga != nil {
+				s.cacheManga(manga)
+				return manga, nil
+			}
+		}
+	} else if strings.HasPrefix(id, "mangadex-") && s.UseMangaDex {
+		// ID has "mangadex-" prefix, extract the actual MangaDex ID
 		mangaDexID := strings.TrimPrefix(id, "mangadex-")
-		// For now, we'd need a GetMangaByID in MangaDex client
-		// This is a placeholder - you can implement it if needed
-		log.Printf("Manga %s not in local DB, would fetch from MangaDex (not implemented)", mangaDexID)
+		log.Printf("Manga %s not in local DB, fetching from MangaDex...", mangaDexID)
+		mdManga, err := s.MangaDex.GetMangaByID(mangaDexID)
+		if err != nil {
+			log.Printf("Failed to fetch from MangaDex: %v", err)
+			return nil, errors.New("not_found")
+		}
+
+		// Transform and cache the manga (use aggregate for detail page)
+		manga := mangadex.TransformMangaDexToManga(mdManga, s.MangaDex, true) // true = use aggregate for detail pages
+		if manga != nil {
+			s.cacheManga(manga)
+			return manga, nil
+		}
 	}
 
 	return nil, errors.New("not_found")

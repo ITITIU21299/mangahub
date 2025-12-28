@@ -52,18 +52,6 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Documentation
-
-For detailed documentation, see **[TECHNICAL_DOCUMENTATION.md](./TECHNICAL_DOCUMENTATION.md)** which includes:
-
-- Complete API documentation
-- Architecture overview
-- Setup instructions
-- Network protocol specifications
-- Database schema
-- Configuration guide
-- Deployment instructions
-
 ## Project Structure
 
 ```
